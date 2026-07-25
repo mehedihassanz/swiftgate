@@ -5,6 +5,8 @@ import PredictPage from "./pages/PredictPage";
 import ComparePage from "./pages/ComparePage";
 import UsagePage from "./pages/UsagePage";
 import AdminPage from "./pages/AdminPage";
+import ApiKeysPage from "./pages/ApiKeysPage";
+import AgentsPage from "./pages/AgentsPage";
 
 export default function App() {
   return (
@@ -17,6 +19,8 @@ export default function App() {
             <Route path="/predict" element={<PredictPage />} />
             <Route path="/compare" element={<ComparePage />} />
             <Route path="/usage" element={<UsagePage />} />
+            <Route path="/keys" element={<ApiKeysPage />} />
+            <Route path="/agents" element={<AgentsPage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Routes>
         </main>

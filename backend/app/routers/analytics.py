@@ -130,10 +130,45 @@ async def get_platform_stats(db: AsyncSession = Depends(get_db)):
     )
     row = total_result.one()
 
+    # Prediction accuracy stats
+    accuracy_result = await db.execute(
+        select(
+            func.count(UsageRecord.id),
+            func.avg(UsageRecord.prediction_error_pct),
+            func.min(UsageRecord.prediction_error_pct),
+            func.max(UsageRecord.prediction_error_pct),
+        ).where(UsageRecord.prediction_error_pct.isnot(None))
+    )
+    acc = accuracy_result.one()
+
     return {
         "total_requests": row[0] or 0,
         "total_cost_cents": row[1] or 0,
         "total_cost_usd": (row[1] or 0) / 10000,
         "total_prompt_tokens": row[2] or 0,
         "total_completion_tokens": row[3] or 0,
+        "prediction_accuracy": {
+            "samples": acc[0] or 0,
+            "avg_error_pct": round(float(acc[1]), 2) if acc[1] else None,
+            "min_error_pct": round(float(acc[2]), 2) if acc[2] else None,
+            "max_error_pct": round(float(acc[3]), 2) if acc[3] else None,
+        } if acc[0] else None,
     }
+
+
+@router.get("/ml/stats")
+async def get_ml_stats():
+    """Get ML prediction model statistics."""
+    from app.services.prediction_ml import predictor
+    stats = predictor.get_stats()
+    stats["buckets_detail"] = predictor.get_bucket_details()
+    return stats
+
+
+@router.post("/ml/train")
+async def train_ml_model(db: AsyncSession = Depends(get_db)):
+    """Manually trigger ML model training from historical usage data."""
+    from app.services.prediction_ml import predictor
+    result = await predictor.train_from_db(db)
+    predictor.save()
+    return result

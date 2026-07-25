@@ -172,3 +172,81 @@ class BudgetAlert(Base):
     message: Mapped[str] = mapped_column(Text)
     triggered_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     acknowledged: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class Agent(Base):
+    """An AI agent tracked by SwiftGate for budget orchestration.
+
+    Agents are identified by agent_id (from API requests). Each agent has
+    its own budget, status, and spend tracking — independent of API keys.
+
+    This enables multi-agent workflows where each agent gets a capped budget,
+    with automatic kill-switches when limits are exceeded.
+    """
+
+    __tablename__ = "agents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    agent_id: Mapped[str] = mapped_column(String(200), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(200), default="unnamed-agent")
+
+    # Budget (in cents to avoid float issues)
+    budget_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    spend_cents: Mapped[int] = mapped_column(Integer, default=0)
+    request_count: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Status — "active" allows requests, "paused" blocks new requests
+    status: Mapped[str] = mapped_column(String(20), default="active")
+    # Options: "active", "paused", "killed", "budget_exceeded"
+
+    # Kill-switch metadata
+    killed_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    killed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # Budget reset cycle
+    budget_reset_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # Alert thresholds (percentages at which alerts fire)
+    alert_thresholds: Mapped[str] = mapped_column(String(100), default="50,80,100")
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+    last_active: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # Associated API key (optional — agents can be shared across keys)
+    api_key_id: Mapped[int | None] = mapped_column(ForeignKey("api_keys.id"), nullable=True, index=True)
+
+
+class AgentEvent(Base):
+    """An event in an agent's execution trace.
+
+    Records the flow of a multi-agent workflow: each LLM call, tool use,
+    and handoff between agents. This builds the observability layer.
+    """
+
+    __tablename__ = "agent_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    agent_id: Mapped[str] = mapped_column(String(200), index=True)
+    event_type: Mapped[str] = mapped_column(String(50))
+    # "llm_call", "tool_call", "tool_result", "handoff", "error", "budget_alert"
+
+    # What was this event?
+    model: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    usage_record_id: Mapped[int | None] = mapped_column(ForeignKey("usage_records.id"), nullable=True)
+
+    # Cost of this event (cents)
+    cost_cents: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Trace info for multi-agent workflows
+    parent_agent_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    trace_id: Mapped[str | None] = mapped_column(String(200), nullable=True, index=True)
+
+    # Event metadata
+    message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_json: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON blob
+
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), index=True)
+

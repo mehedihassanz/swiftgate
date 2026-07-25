@@ -78,9 +78,17 @@ async def predict_cost(
     # 2. Classify task type
     task_type = classify_task(messages)
 
-    # 3. Estimate output tokens
+    # 3. Estimate output tokens — use ML predictor (the data flywheel)
     effective_max = max_tokens or model.max_output
-    estimated_output = estimate_output_tokens(model_id, task_type, effective_max)
+
+    from app.services.prediction_ml import predictor
+    ml_result = predictor.predict(
+        model_id=model_id,
+        task_type=task_type,
+        input_tokens=input_tokens,
+        max_tokens=effective_max,
+    )
+    estimated_output = ml_result.predicted_output_tokens
 
     # 4. Check cache eligibility
     # First message (system prompt) is often cached on repeat calls
@@ -112,7 +120,7 @@ async def predict_cost(
     suggestion = await _find_cheaper_alternative(db, model, task_type, estimated_output)
 
     # 7. Confidence level
-    confidence = "high" if estimated_output < 1000 else "medium"
+    confidence = "high" if ml_result.confidence >= 0.8 else "medium" if ml_result.confidence >= 0.5 else "low"
 
     return {
         "model": model_id,
@@ -142,6 +150,13 @@ async def predict_cost(
         },
         "confidence": confidence,
         "routing_suggestion": suggestion,
+        "ml_prediction": {
+            "method": ml_result.method,
+            "confidence_score": round(ml_result.confidence, 3),
+            "sample_size": ml_result.sample_size,
+            "p50": ml_result.p50,
+            "p90": ml_result.p90,
+        },
     }
 
 

@@ -1,4 +1,4 @@
-import { Zap, Gauge, BarChart3, Calculator, GitCompare, Settings } from "lucide-react";
+import { Zap, Gauge, BarChart3, Calculator, GitCompare, Settings, Key, Bot } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const cls = (...args: (string | false | undefined)[]) => args.filter(Boolean).join(" ");
@@ -8,6 +8,8 @@ const NAV = [
   { to: "/predict", label: "Cost Predictor", icon: Calculator },
   { to: "/compare", label: "Compare Models", icon: GitCompare },
   { to: "/usage", label: "Usage Analytics", icon: BarChart3 },
+  { to: "/keys", label: "API Keys", icon: Key },
+  { to: "/agents", label: "Agents", icon: Bot },
   { to: "/admin", label: "Admin Panel", icon: Settings },
 ];
 

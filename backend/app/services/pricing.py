@@ -651,7 +651,8 @@ async def seed_database(db: AsyncSession) -> dict[str, Any]:
     existing_models = await db.execute(select(Model))
     model_map: dict[str, Model] = {m.model_id: m for m in existing_models.scalars().all()}
 
-    for mdata in MODELS:
+    for mdata_orig in MODELS:
+        mdata = dict(mdata_orig)  # copy so we don't mutate the original
         provider_name = mdata.pop("provider")
         model_id = mdata["model_id"]
 

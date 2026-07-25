@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import admin, analytics, cost, gateway
+from app.routers import admin, agents, analytics, apikeys, cost, gateway
 from app.services.pricing import seed_database
 
 
@@ -72,6 +72,8 @@ app.include_router(cost.router)        # /v1/predict, /v1/compare, /v1/models, /
 app.include_router(gateway.router)     # /v1/chat/completions (OpenAI-compatible proxy)
 app.include_router(analytics.router)   # /v1/usage, /v1/usage/daily, /v1/stats
 app.include_router(admin.router)       # /admin/providers, /admin/models (CRUD)
+app.include_router(apikeys.router)     # /v1/keys (create, list, revoke)
+app.include_router(agents.router)      # /v1/agents (budget orchestration)
 
 
 # ─── Root ──────────────────────────────────────────────────────────────
