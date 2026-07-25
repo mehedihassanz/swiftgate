@@ -6,7 +6,7 @@ Sources:
   - OpenRouter /api/v1/models (live, July 2026)
   - DeepInfra, Together, Anthropic, OpenAI pricing pages
 
-This is NeuralWatt's core data asset — the more accurate and comprehensive
+This is SwiftGate's core data asset — the more accurate and comprehensive
 this registry is, the better our cost predictions.
 """
 from __future__ import annotations
@@ -74,6 +74,83 @@ PROVIDERS = [
         "base_url": "https://api.deepseek.com/v1",
         "api_key_env": "DEEPSEEK_API_KEY",
         "priority": 15,
+    },
+    {
+        "name": "xai",
+        "display_name": "xAI (Grok)",
+        "base_url": "https://api.x.ai/v1",
+        "api_key_env": "XAI_API_KEY",
+        "priority": 15,
+    },
+    {
+        "name": "cohere",
+        "display_name": "Cohere",
+        "base_url": "https://api.cohere.ai/v1",
+        "api_key_env": "COHERE_API_KEY",
+        "priority": 20,
+    },
+    {
+        "name": "perplexity",
+        "display_name": "Perplexity AI",
+        "base_url": "https://api.perplexity.ai",
+        "api_key_env": "PERPLEXITY_API_KEY",
+        "priority": 20,
+    },
+    {
+        "name": "moonshot",
+        "display_name": "Moonshot AI (Kimi)",
+        "base_url": "https://api.moonshot.cn/v1",
+        "api_key_env": "MOONSHOT_API_KEY",
+        "priority": 20,
+    },
+    {
+        "name": "zhipu",
+        "display_name": "Zhipu (GLM)",
+        "base_url": "https://open.bigmodel.cn/api/paas/v4",
+        "api_key_env": "ZHIPU_API_KEY",
+        "priority": 20,
+    },
+    {
+        "name": "novita",
+        "display_name": "Novita AI",
+        "base_url": "https://api.novita.ai/v3/openai",
+        "api_key_env": "NOVITA_API_KEY",
+        "priority": 25,
+    },
+    {
+        "name": "fireworks",
+        "display_name": "Fireworks AI",
+        "base_url": "https://api.fireworks.ai/inference/v1",
+        "api_key_env": "FIREWORKS_API_KEY",
+        "priority": 20,
+    },
+    {
+        "name": "groq",
+        "display_name": "Groq",
+        "base_url": "https://api.groq.com/openai/v1",
+        "api_key_env": "GROQ_API_KEY",
+        "priority": 15,
+    },
+    {
+        "name": "minimax",
+        "display_name": "MiniMax",
+        "base_url": "https://api.minimax.chat/v1",
+        "api_key_env": "MINIMAX_API_KEY",
+        "priority": 25,
+    },
+    {
+        "name": "tencent",
+        "display_name": "Tencent Hunyuan",
+        "base_url": "https://api.hunyuan.cloud.tencent.com/v1",
+        "api_key_env": "TENCENT_API_KEY",
+        "priority": 25,
+    },
+    {
+        "name": "bytedance",
+        "display_name": "ByteDance Doubao",
+        "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+        "api_key_env": "BYTEDANCE_API_KEY",
+        "priority": 25,
     },
 ]
 
@@ -264,6 +341,268 @@ MODELS = [
         "context_window": 128000, "max_output": 8192,
         "supports_tools": True, "supports_vision": False, "supports_json": True,
         "quality_score": 8.2, "speed_score": 65, "category": "frontier",
+    },
+
+    # ── Mistral variants ────────────────────────────────────────────────
+    {
+        "model_id": "mistral-small",
+        "display_name": "Mistral Small",
+        "provider": "mistral",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.0000002",      # $0.20/1M
+        "completion_price": "0.0000006",   # $0.60/1M
+        "cached_price": None,
+        "context_window": 32000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 7.5, "speed_score": 95, "category": "cheap",
+    },
+    {
+        "model_id": "codestral",
+        "display_name": "Codestral",
+        "provider": "mistral",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.0000003",
+        "completion_price": "0.0000009",
+        "cached_price": None,
+        "context_window": 256000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 8.0, "speed_score": 90, "category": "coding",
+    },
+    {
+        "model_id": "mistral-nemo",
+        "display_name": "Mistral NeMo",
+        "provider": "mistral",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.00000015",
+        "completion_price": "0.00000015",
+        "cached_price": None,
+        "context_window": 128000, "max_output": 8192,
+        "supports_tools": False, "supports_vision": False, "supports_json": False,
+        "quality_score": 7.0, "speed_score": 95, "category": "cheap",
+    },
+
+    # ── xAI (Grok) ──────────────────────────────────────────────────────
+    {
+        "model_id": "grok-4",
+        "display_name": "Grok 4",
+        "provider": "xai",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.000005",        # $5/1M
+        "completion_price": "0.000015",     # $15/1M
+        "cached_price": None,
+        "context_window": 256000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 8.7, "speed_score": 55, "category": "frontier",
+    },
+    {
+        "model_id": "grok-4-fast",
+        "display_name": "Grok 4 Fast",
+        "provider": "xai",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.0000002",
+        "completion_price": "0.0000011",
+        "cached_price": None,
+        "context_window": 100000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 8.2, "speed_score": 85, "category": "fast",
+    },
+    {
+        "model_id": "grok-3-mini",
+        "display_name": "Grok 3 Mini",
+        "provider": "xai",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.0000003",
+        "completion_price": "0.0000005",
+        "cached_price": None,
+        "context_window": 100000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 7.3, "speed_score": 90, "category": "cheap",
+    },
+
+    # ── Cohere ──────────────────────────────────────────────────────────
+    {
+        "model_id": "command-r-plus",
+        "display_name": "Command R+",
+        "provider": "cohere",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.0000025",
+        "completion_price": "0.00001",
+        "cached_price": None,
+        "context_window": 128000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 8.3, "speed_score": 60, "category": "frontier",
+    },
+    {
+        "model_id": "command-r",
+        "display_name": "Command R",
+        "provider": "cohere",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.00000015",
+        "completion_price": "0.0000006",
+        "cached_price": None,
+        "context_window": 128000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 7.8, "speed_score": 85, "category": "cheap",
+    },
+    {
+        "model_id": "command-r7b",
+        "display_name": "Command R7B",
+        "provider": "cohere",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.0000000375",
+        "completion_price": "0.00000015",
+        "cached_price": None,
+        "context_window": 128000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 6.8, "speed_score": 98, "category": "cheap",
+    },
+
+    # ── Perplexity ──────────────────────────────────────────────────────
+    {
+        "model_id": "llama-3.1-sonar-huge",
+        "display_name": "Sonar Huge (online)",
+        "provider": "perplexity",
+        "tokenizer": "llama",
+        "prompt_price": "0.000005",
+        "completion_price": "0.00001",
+        "cached_price": None,
+        "context_window": 127000, "max_output": 8192,
+        "supports_tools": False, "supports_vision": False, "supports_json": False,
+        "quality_score": 8.5, "speed_score": 50, "category": "frontier",
+    },
+    {
+        "model_id": "llama-3.1-sonar-large",
+        "display_name": "Sonar Large (online)",
+        "provider": "perplexity",
+        "tokenizer": "llama",
+        "prompt_price": "0.0000009",
+        "completion_price": "0.0000009",
+        "cached_price": None,
+        "context_window": 127000, "max_output": 8192,
+        "supports_tools": False, "supports_vision": False, "supports_json": False,
+        "quality_score": 8.0, "speed_score": 70, "category": "frontier",
+    },
+
+    # ── Moonshot (Kimi) ─────────────────────────────────────────────────
+    {
+        "model_id": "moonshot-v1-128k",
+        "display_name": "Kimi K2 128K",
+        "provider": "moonshot",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.0000014",
+        "completion_price": "0.0000028",
+        "cached_price": None,
+        "context_window": 128000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 8.2, "speed_score": 60, "category": "frontier",
+    },
+    {
+        "model_id": "moonshot-v1-32k",
+        "display_name": "Kimi K2 32K",
+        "provider": "moonshot",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.0000007",
+        "completion_price": "0.0000008",
+        "cached_price": None,
+        "context_window": 32000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 7.8, "speed_score": 80, "category": "cheap",
+    },
+
+    # ── MiniMax ─────────────────────────────────────────────────────────
+    {
+        "model_id": "minimax-m3",
+        "display_name": "MiniMax M3",
+        "provider": "minimax",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.0000007",
+        "completion_price": "0.0000028",
+        "cached_price": None,
+        "context_window": 1_000_000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 8.1, "speed_score": 55, "category": "frontier",
+    },
+
+    # ── Tencent Hunyuan ─────────────────────────────────────────────────
+    {
+        "model_id": "hunyuan-pro",
+        "display_name": "Hunyuan Pro",
+        "provider": "tencent",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.000004",
+        "completion_price": "0.000012",
+        "cached_price": None,
+        "context_window": 28000, "max_output": 4096,
+        "supports_tools": False, "supports_vision": False, "supports_json": True,
+        "quality_score": 7.8, "speed_score": 65, "category": "frontier",
+    },
+
+    # ── ByteDance Doubao ────────────────────────────────────────────────
+    {
+        "model_id": "doubao-pro-128k",
+        "display_name": "Doubao Pro 128K",
+        "provider": "bytedance",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.00000011",
+        "completion_price": "0.00000028",
+        "cached_price": None,
+        "context_window": 128000, "max_output": 8192,
+        "supports_tools": False, "supports_vision": False, "supports_json": True,
+        "quality_score": 7.5, "speed_score": 85, "category": "cheap",
+    },
+
+    # ── Groq (ultra-fast inference) ─────────────────────────────────────
+    {
+        "model_id": "llama-3.3-70b-versatile",
+        "display_name": "Llama 3.3 70B (Groq)",
+        "provider": "groq",
+        "tokenizer": "llama",
+        "prompt_price": "0.00000059",
+        "completion_price": "0.00000079",
+        "cached_price": None,
+        "context_window": 128000, "max_output": 32768,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 8.0, "speed_score": 100, "category": "fast",
+    },
+    {
+        "model_id": "llama-3.1-8b-instant",
+        "display_name": "Llama 3.1 8B Instant (Groq)",
+        "provider": "groq",
+        "tokenizer": "llama",
+        "prompt_price": "0.00000005",
+        "completion_price": "0.00000008",
+        "cached_price": None,
+        "context_window": 128000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 6.8, "speed_score": 100, "category": "fast",
+    },
+
+    # ── Novita AI ───────────────────────────────────────────────────────
+    {
+        "model_id": "gpt-oss-120b",
+        "display_name": "GPT-OSS 120B",
+        "provider": "novita",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.00000005",      # $0.05/1M — ultra cheap
+        "completion_price": "0.00000025",
+        "cached_price": None,
+        "context_window": 128000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 7.5, "speed_score": 80, "category": "cheap",
+    },
+
+    # ── Fireworks AI ────────────────────────────────────────────────────
+    {
+        "model_id": "firework-llama4-scout",
+        "display_name": "Llama 4 Scout (Fireworks)",
+        "provider": "fireworks",
+        "tokenizer": "llama",
+        "prompt_price": "0.00000011",
+        "completion_price": "0.0000003",
+        "cached_price": None,
+        "context_window": 128000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": True, "supports_json": True,
+        "quality_score": 7.8, "speed_score": 90, "category": "cheap",
     },
 ]
 

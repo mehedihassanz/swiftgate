@@ -12,7 +12,7 @@ export default function App() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700">
               <Zap className="h-4 w-4 text-white" />
             </div>
-            <span className="text-base font-bold tracking-tight">NeuralWatt</span>
+            <span className="text-base font-bold tracking-tight">SwiftGate</span>
           </div>
           <div className="flex items-center gap-6 text-sm">
             <a href="#features" className="text-ink-600 hover:text-ink-900">Features</a>
@@ -37,7 +37,7 @@ export default function App() {
             See the cost <span className="text-brand-600">before</span> you pay it
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-ink-600">
-            NeuralWatt is an AI model gateway that predicts exact request costs before sending.
+            SwiftGate is an AI model gateway that predicts exact request costs before sending.
             Compare 14+ models across 7 providers. Route intelligently. Never get a surprise bill again.
           </p>
           <div className="mt-8 flex justify-center gap-3">
@@ -109,7 +109,7 @@ export default function App() {
         <div className="mx-auto max-w-3xl px-6">
           <h2 className="text-center text-3xl font-bold tracking-tight">How it works</h2>
           <div className="mt-10 space-y-6">
-            <Step num="1" title="Predict" desc="Before forwarding your request, NeuralWatt counts tokens using the exact tokenizer for your model and computes the estimated cost." />
+            <Step num="1" title="Predict" desc="Before forwarding your request, SwiftGate counts tokens using the exact tokenizer for your model and computes the estimated cost." />
             <Step num="2" title="Route" desc="If a cheaper model with similar quality exists, we suggest it. Or auto-route based on your preference: cheapest, fastest, balanced, or highest quality." />
             <Step num="3" title="Track" desc="After completion, we record actual token usage and compare it to the prediction — making future predictions more accurate." />
           </div>
@@ -143,7 +143,7 @@ export default function App() {
       {/* Footer */}
       <footer className="border-t border-ink-100 py-8 text-center text-sm text-ink-400">
         <div className="mx-auto max-w-6xl px-6">
-          NeuralWatt — See the cost before you pay it · Built with ⚡
+          SwiftGate — See the cost before you pay it · Built with ⚡
         </div>
       </footer>
     </div>

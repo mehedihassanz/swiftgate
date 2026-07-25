@@ -13,7 +13,7 @@ def _get_bool(key: str, default: bool = False) -> bool:
 class Settings:
     # Database
     DATABASE_URL: str = os.environ.get(
-        "DATABASE_URL", "sqlite+aiosqlite:///./neuralwatt.db"
+        "DATABASE_URL", "sqlite+aiosqlite:///./swiftgate.db"
     )
 
     # Redis (for real-time spend tracking + budget enforcement)
@@ -25,7 +25,7 @@ class Settings:
     PORT: int = int(os.environ.get("PORT", "8000"))
 
     # Provider API keys (BYOK from gateway operator)
-    # These are the keys NeuralWatt uses to call upstream providers.
+    # These are the keys SwiftGate uses to call upstream providers.
     # Users can also bring their own keys (BYOK mode).
     OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY", "")
     ANTHROPIC_API_KEY: str = os.environ.get("ANTHROPIC_API_KEY", "")

@@ -48,7 +48,7 @@ class CompareRequest(BaseModel):
 async def predict(req: PredictRequest, db: AsyncSession = Depends(get_db)):
     """Predict the exact cost of an API request BEFORE sending it.
 
-    This is NeuralWatt's killer feature — no other gateway offers this.
+    This is SwiftGate's killer feature — no other gateway offers this.
 
     Returns exact input token count, estimated output, and cost in cents + USD.
     """

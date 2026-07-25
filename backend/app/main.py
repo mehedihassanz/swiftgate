@@ -1,4 +1,4 @@
-"""NeuralWatt — AI model gateway with cost intelligence.
+"""SwiftGate — AI model gateway with cost intelligence.
 
 'See the cost before you pay it.'
 """
@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import analytics, cost, gateway
+from app.routers import admin, analytics, cost, gateway
 from app.services.pricing import seed_database
 
 
@@ -24,13 +24,13 @@ async def lifespan(app: FastAPI):
     async with async_session() as db:
         result = await seed_database(db)
         await db.commit()
-        print(f"[NeuralWatt] Database seeded: {result}")
+        print(f"[SwiftGate] Database seeded: {result}")
 
     yield
 
 
 app = FastAPI(
-    title="NeuralWatt",
+    title="SwiftGate",
     description="AI model gateway with cost intelligence. See the cost before you pay it.",
     version="1.0.0",
     lifespan=lifespan,
@@ -49,7 +49,7 @@ app.add_middleware(
 
 @app.get("/health", tags=["health"])
 async def health():
-    return {"status": "ok", "service": "neuralwatt", "version": "1.0.0"}
+    return {"status": "ok", "service": "swiftgate", "version": "1.0.0"}
 
 
 @app.get("/health/ready", tags=["health"])
@@ -71,6 +71,7 @@ async def health_ready():
 app.include_router(cost.router)        # /v1/predict, /v1/compare, /v1/models, /v1/pareto
 app.include_router(gateway.router)     # /v1/chat/completions (OpenAI-compatible proxy)
 app.include_router(analytics.router)   # /v1/usage, /v1/usage/daily, /v1/stats
+app.include_router(admin.router)       # /admin/providers, /admin/models (CRUD)
 
 
 # ─── Root ──────────────────────────────────────────────────────────────
@@ -78,7 +79,7 @@ app.include_router(analytics.router)   # /v1/usage, /v1/usage/daily, /v1/stats
 @app.get("/", tags=["root"])
 async def root():
     return {
-        "name": "NeuralWatt",
+        "name": "SwiftGate",
         "tagline": "See the cost before you pay it",
         "docs": "/docs",
         "endpoints": {
@@ -89,5 +90,6 @@ async def root():
             "chat": "POST /v1/chat/completions",
             "usage": "GET /v1/usage",
             "stats": "GET /v1/stats",
+            "admin": "GET /admin/providers, /admin/models",
         },
     }

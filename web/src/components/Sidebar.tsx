@@ -1,4 +1,4 @@
-import { Zap, Gauge, BarChart3, Calculator, GitCompare } from "lucide-react";
+import { Zap, Gauge, BarChart3, Calculator, GitCompare, Settings } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const cls = (...args: (string | false | undefined)[]) => args.filter(Boolean).join(" ");
@@ -8,6 +8,7 @@ const NAV = [
   { to: "/predict", label: "Cost Predictor", icon: Calculator },
   { to: "/compare", label: "Compare Models", icon: GitCompare },
   { to: "/usage", label: "Usage Analytics", icon: BarChart3 },
+  { to: "/admin", label: "Admin Panel", icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -17,7 +18,7 @@ export default function Sidebar() {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700">
           <Zap className="h-5 w-5 text-white" />
         </div>
-        <span className="text-base font-semibold tracking-tight text-ink-900">NeuralWatt</span>
+        <span className="text-base font-semibold tracking-tight text-ink-900">SwiftGate</span>
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-2">

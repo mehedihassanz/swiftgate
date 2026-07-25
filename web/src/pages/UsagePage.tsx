@@ -137,7 +137,7 @@ export default function UsagePage() {
           ) : (
             <div className="rounded-xl border border-dashed border-ink-300 bg-white p-12 text-center">
               <p className="text-sm text-ink-400">
-                No usage data yet. Start routing requests through NeuralWatt to see analytics here.
+                No usage data yet. Start routing requests through SwiftGate to see analytics here.
               </p>
             </div>
           )}

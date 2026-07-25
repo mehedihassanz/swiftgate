@@ -1,1 +1,1 @@
-"""NeuralWatt — AI model gateway with cost intelligence."""
+"""SwiftGate — AI model gateway with cost intelligence."""

@@ -52,7 +52,7 @@ class ChatCompletionRequest(BaseModel):
     tools: list[dict] | None = None
     tool_choice: Any = None
     response_format: dict | None = None
-    # NeuralWatt extensions
+    # SwiftGate extensions
     optimize_for: str | None = None  # "cheapest", "fastest", "balanced", "quality"
     agent_id: str | None = None
     cost_prediction: bool = True  # return prediction in response headers
@@ -391,11 +391,11 @@ async def chat_completions(
                 )
                 await db.commit()
 
-                # Add NeuralWatt headers to response
+                # Add SwiftGate headers to response
                 # (FastAPI doesn't let us add headers to a returned dict directly,
                 # so we embed prediction info in the response)
                 if prediction:
-                    response_data["neuralwatt"] = {
+                    response_data["swiftgate"] = {
                         "predicted_cost_cents": prediction["costs"]["estimated_total_cents"],
                         "actual_cost_cents": (
                             int(float(model.prompt_price) * response_data.get("usage", {}).get("prompt_tokens", 0) * 10000) +

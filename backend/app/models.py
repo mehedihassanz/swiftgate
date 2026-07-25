@@ -1,4 +1,4 @@
-"""SQLAlchemy models for NeuralWatt.
+"""SQLAlchemy models for SwiftGate.
 
 Core entities:
   - Model         : a model in our catalog (pricing, capabilities, tokenizer type)
@@ -96,7 +96,7 @@ class ApiKey(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     key_hash: Mapped[str] = mapped_column(String(128), unique=True, index=True)
-    key_prefix: Mapped[str] = mapped_column(String(20))  # "nw-...abc" for display
+    key_prefix: Mapped[str] = mapped_column(String(20))  # "sg-...abc" for display
     name: Mapped[str] = mapped_column(String(200), default="default")
     user_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
 

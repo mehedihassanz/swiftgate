@@ -1,4 +1,4 @@
-"""Cost prediction engine — NeuralWatt's core IP.
+"""Cost prediction engine — SwiftGate's core IP.
 
 Predicts the exact cost of an API request BEFORE sending it.
 This is what no other gateway offers.
