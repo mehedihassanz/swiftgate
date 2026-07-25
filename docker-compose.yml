@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./neuralwatt.db
+      - TOKEN_MARGIN=0.01
+      # Set these to enable the gateway proxy
+      # - OPENAI_API_KEY=sk-...
+      # - ANTHROPIC_API_KEY=sk-ant-...
+      # - DEEPINFRA_API_KEY=...
+    volumes:
+      - backend-data:/app/data
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  landing:
+    build:
+      context: .
+      dockerfile: landing/Dockerfile
+    ports:
+      - "3002:80"
+    restart: unless-stopped
+
+volumes:
+  backend-data:

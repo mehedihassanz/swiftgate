@@ -1,0 +1,93 @@
+"""NeuralWatt — AI model gateway with cost intelligence.
+
+'See the cost before you pay it.'
+"""
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.database import init_db
+from app.routers import analytics, cost, gateway
+from app.services.pricing import seed_database
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup: create tables + seed pricing data."""
+    await init_db()
+
+    # Seed the pricing database
+    from app.database import async_session
+    async with async_session() as db:
+        result = await seed_database(db)
+        await db.commit()
+        print(f"[NeuralWatt] Database seeded: {result}")
+
+    yield
+
+
+app = FastAPI(
+    title="NeuralWatt",
+    description="AI model gateway with cost intelligence. See the cost before you pay it.",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ─── Health ────────────────────────────────────────────────────────────
+
+@app.get("/health", tags=["health"])
+async def health():
+    return {"status": "ok", "service": "neuralwatt", "version": "1.0.0"}
+
+
+@app.get("/health/ready", tags=["health"])
+async def health_ready():
+    try:
+        from app.database import engine
+        from sqlalchemy import text
+
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return {"status": "ready", "database": "connected"}
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(503, f"Database not ready: {e}")
+
+
+# ─── Routers ───────────────────────────────────────────────────────────
+
+app.include_router(cost.router)        # /v1/predict, /v1/compare, /v1/models, /v1/pareto
+app.include_router(gateway.router)     # /v1/chat/completions (OpenAI-compatible proxy)
+app.include_router(analytics.router)   # /v1/usage, /v1/usage/daily, /v1/stats
+
+
+# ─── Root ──────────────────────────────────────────────────────────────
+
+@app.get("/", tags=["root"])
+async def root():
+    return {
+        "name": "NeuralWatt",
+        "tagline": "See the cost before you pay it",
+        "docs": "/docs",
+        "endpoints": {
+            "predict": "POST /v1/predict",
+            "compare": "POST /v1/compare",
+            "models": "GET /v1/models",
+            "pareto": "GET /v1/pareto",
+            "chat": "POST /v1/chat/completions",
+            "usage": "GET /v1/usage",
+            "stats": "GET /v1/stats",
+        },
+    }
