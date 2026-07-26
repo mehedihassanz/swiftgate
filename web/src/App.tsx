@@ -7,6 +7,8 @@ import UsagePage from "./pages/UsagePage";
 import AdminPage from "./pages/AdminPage";
 import ApiKeysPage from "./pages/ApiKeysPage";
 import AgentsPage from "./pages/AgentsPage";
+import CachePage from "./pages/CachePage";
+import QualityPage from "./pages/QualityPage";
 
 export default function App() {
   return (
@@ -21,6 +23,8 @@ export default function App() {
             <Route path="/usage" element={<UsagePage />} />
             <Route path="/keys" element={<ApiKeysPage />} />
             <Route path="/agents" element={<AgentsPage />} />
+            <Route path="/quality" element={<QualityPage />} />
+            <Route path="/cache" element={<CachePage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Routes>
         </main>

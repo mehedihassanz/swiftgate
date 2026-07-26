@@ -314,3 +314,54 @@ class RoutingRule(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
+
+class CacheEntry(Base):
+    """Semantic cache entry for LLM responses.
+
+    Stores responses keyed by a normalized hash of the prompt. When a
+    semantically similar request arrives, the cached response is served
+    without calling the upstream provider — zero cost, instant response.
+
+    Two matching modes:
+      - exact: SHA-256 hash of normalized messages (zero false positives)
+      - semantic: token-level Jaccard similarity above threshold (or embedding cosine)
+
+    Privacy: entries are per-api_key by default (no cross-user leakage).
+    Shared mode can be enabled per-key for collaborative caching.
+    """
+
+    __tablename__ = "cache_entries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # Normalized content hash (SHA-256 of normalized message content)
+    content_hash: Mapped[str] = mapped_column(String(64), index=True)
+
+    # What was cached
+    model_id: Mapped[str] = mapped_column(String(200), index=True)
+    task_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    # The original request (for similarity comparison)
+    messages_json: Mapped[str] = mapped_column(Text)
+
+    # The cached response
+    response_json: Mapped[str] = mapped_column(Text)
+
+    # Token set for Jaccard similarity (pipe-delimited sorted unique tokens)
+    token_fingerprint: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Cost that was saved by this cache hit (cents)
+    saved_cost_cents: Mapped[int] = mapped_column(Integer, default=0)
+    saved_tokens: Mapped[int] = mapped_column(Integer, default=0)
+
+    # How many times this entry has been served from cache
+    hit_count: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Privacy scoping
+    api_key_id: Mapped[int | None] = mapped_column(ForeignKey("api_keys.id"), nullable=True, index=True)
+    is_shared: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # TTL
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), index=True)
+    last_hit_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+

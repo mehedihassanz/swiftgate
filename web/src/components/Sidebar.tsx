@@ -1,4 +1,4 @@
-import { Zap, Gauge, BarChart3, Calculator, GitCompare, Settings, Key, Bot } from "lucide-react";
+import { Zap, Gauge, BarChart3, Calculator, GitCompare, Settings, Key, Bot, Database, Trophy } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const cls = (...args: (string | false | undefined)[]) => args.filter(Boolean).join(" ");
@@ -7,6 +7,8 @@ const NAV = [
   { to: "/", label: "Dashboard", icon: Gauge },
   { to: "/predict", label: "Cost Predictor", icon: Calculator },
   { to: "/compare", label: "Compare Models", icon: GitCompare },
+  { to: "/quality", label: "Quality & PII", icon: Trophy },
+  { to: "/cache", label: "Cache", icon: Database },
   { to: "/usage", label: "Usage Analytics", icon: BarChart3 },
   { to: "/keys", label: "API Keys", icon: Key },
   { to: "/agents", label: "Agents", icon: Bot },
@@ -47,7 +49,7 @@ export default function Sidebar() {
       <div className="border-t border-ink-200 p-3">
         <div className="rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500">
           <div className="font-semibold text-ink-700">⚡ Cost Intelligence</div>
-          <div className="mt-0.5">1% margin · vs OpenRouter's 5.5%</div>
+          <div className="mt-0.5">5 data flywheels · 43 endpoints</div>
         </div>
       </div>
     </aside>

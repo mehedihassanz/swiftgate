@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import admin, agents, analytics, apikeys, cost, gateway, quality
+from app.routers import admin, agents, analytics, apikeys, cache_pii, cost, gateway, quality
 from app.services.pricing import seed_database
 
 
@@ -75,6 +75,7 @@ app.include_router(admin.router)       # /admin/providers, /admin/models (CRUD)
 app.include_router(apikeys.router)     # /v1/keys (create, list, revoke)
 app.include_router(agents.router)      # /v1/agents (budget orchestration)
 app.include_router(quality.router)     # /v1/quality, /v1/routing (quality-aware routing)
+app.include_router(cache_pii.router)   # /v1/cache, /v1/pii (semantic cache + PII redaction)
 
 
 # ─── Root ──────────────────────────────────────────────────────────────

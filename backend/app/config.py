@@ -42,6 +42,16 @@ class Settings:
     DEFAULT_ROUTING: str = os.environ.get("DEFAULT_ROUTING", "balanced")
     # Options: "cheapest", "fastest", "balanced", "quality"
 
+    # Semantic cache
+    CACHE_ENABLED: bool = _get_bool("CACHE_ENABLED", True)
+    CACHE_SEMANTIC_MATCH: bool = _get_bool("CACHE_SEMANTIC_MATCH", True)  # Jaccard similarity
+    CACHE_SHARED_DEFAULT: bool = _get_bool("CACHE_SHARED_DEFAULT", False)  # cross-user caching
+    CACHE_TTL_HOURS: int = int(os.environ.get("CACHE_TTL_HOURS", "24"))
+
+    # PII redaction
+    PII_REDACTION_ENABLED: bool = _get_bool("PII_REDACTION_ENABLED", False)
+    PII_REHYDRATE_RESPONSE: bool = _get_bool("PII_REHYDRATE_RESPONSE", True)  # restore PII in response
+
     @property
     def is_postgres(self) -> bool:
         return "postgresql" in self.DATABASE_URL

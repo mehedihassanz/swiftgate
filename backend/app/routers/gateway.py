@@ -435,6 +435,39 @@ async def chat_completions(
             f"Retry in {60 - rate_info['remaining']}s."
         )
 
+    # ── PII Redaction (before anything else touches the messages) ──
+    pii_token_map = None
+    if settings.PII_REDACTION_ENABLED:
+        from app.services.pii_redaction import redact_messages
+        messages_dicts = [m.model_dump() for m in req.messages]
+        redacted_msgs, pii_token_map = redact_messages(messages_dicts)
+        # Replace messages in both req and body with redacted versions
+        req.messages = [Message(**m) for m in redacted_msgs]
+        body["messages"] = redacted_msgs
+        if pii_token_map and len(pii_token_map) > 0:
+            logger.info(f"PII redacted {len(pii_token_map)} entities for this request")
+
+    # ── Cache check (after PII redaction so cached hash is consistent) ──
+    cache_bypass = body.get("cache", True)  # default: use cache
+    if settings.CACHE_ENABLED and cache_bypass:
+        from app.services.semantic_cache import check_cache
+        messages_for_cache = [m.model_dump() for m in req.messages]
+        cached = await check_cache(
+            db=db,
+            messages=messages_for_cache,
+            model_id=req.model,
+            api_key_id=api_key.id if api_key else None,
+            semantic=settings.CACHE_SEMANTIC_MATCH,
+        )
+        if cached:
+            # Rehydrate PII in cached response
+            if pii_token_map and settings.PII_REHYDRATE_RESPONSE:
+                from app.services.pii_redaction import rehydrate_response
+                cached = rehydrate_response(cached, pii_token_map)
+            await db.commit()
+            cached.setdefault("swiftgate", {})["cache_hit"] = True
+            return cached
+
     # ── Build failover chain ──
     strategy = body.get("optimize_for", settings.DEFAULT_ROUTING)
     failover_chain = await route_by_strategy(db, req.model, strategy)
@@ -467,6 +500,8 @@ async def chat_completions(
             return await _forward_request(
                 db, api_key, model, provider, body, req, prediction,
                 attempt, len(failover_chain),
+                pii_token_map=pii_token_map,
+                cache_enabled=settings.CACHE_ENABLED and cache_bypass,
             )
         except httpx.TimeoutException:
             logger.warning(f"Provider {provider.name} timed out (attempt {attempt + 1})")
@@ -497,6 +532,8 @@ async def _forward_request(
     prediction: dict | None,
     attempt: int,
     total_attempts: int,
+    pii_token_map=None,
+    cache_enabled: bool = False,
 ):
     """Forward request to a single provider. Handles both streaming and non-streaming."""
     upstream_url, upstream_headers, upstream_body = _build_upstream_request(
@@ -511,12 +548,16 @@ async def _forward_request(
                 client, db, api_key, model, provider,
                 upstream_url, upstream_headers, upstream_body,
                 prediction, req.agent_id, start_time,
+                pii_token_map=pii_token_map,
+                cache_enabled=cache_enabled,
             )
         else:
             return await _handle_non_streaming(
                 client, db, api_key, model, provider,
                 upstream_url, upstream_headers, upstream_body,
-                body, prediction, req.agent_id, start_time,
+                prediction, req.agent_id, start_time,
+                pii_token_map=pii_token_map,
+                cache_enabled=cache_enabled,
             )
 
 
@@ -532,6 +573,8 @@ async def _handle_non_streaming(
     prediction: dict | None,
     agent_id: str | None,
     start_time: float,
+    pii_token_map=None,
+    cache_enabled: bool = False,
 ):
     """Handle a non-streaming request."""
     response = await client.post(url, headers=headers, json=body)
@@ -550,6 +593,37 @@ async def _handle_non_streaming(
         )
 
     response_data = response.json()
+
+    # ── Store in semantic cache (before PII rehydration) ──
+    if cache_enabled and response_data.get("choices"):
+        from app.services.semantic_cache import store_cache
+        # Determine task type for TTL
+        task_type = prediction.get("task_type") if prediction else None
+        # Calculate saved cost
+        usage = response_data.get("usage", {})
+        saved_tokens = usage.get("total_tokens", 0)
+        saved_cost = (
+            int(float(model.prompt_price) * usage.get("prompt_tokens", 0) * 10000) +
+            int(float(model.completion_price) * usage.get("completion_tokens", 0) * 10000)
+        )
+        try:
+            await store_cache(
+                db=db,
+                messages=body.get("messages", []),
+                response=response_data,
+                model_id=model.model_id,
+                task_type=task_type,
+                api_key_id=api_key.id if api_key else None,
+                saved_cost_cents=saved_cost,
+                saved_tokens=saved_tokens,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to store cache entry: {e}")
+
+    # ── PII rehydration (restore original PII in response) ──
+    if pii_token_map and settings.PII_REHYDRATE_RESPONSE:
+        from app.services.pii_redaction import rehydrate_response
+        response_data = rehydrate_response(response_data, pii_token_map)
 
     # Record actual usage
     await _record_usage(
@@ -590,6 +664,8 @@ async def _handle_streaming(
     prediction: dict | None,
     agent_id: str | None,
     start_time: float,
+    pii_token_map=None,
+    cache_enabled: bool = False,
 ):
     """Handle a streaming request with usage tracking."""
     usage_tracker = StreamingUsageTracker()
