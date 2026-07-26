@@ -1,6 +1,18 @@
 version: "3.9"
 
 services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379"
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   backend:
     build:
       context: .
@@ -9,6 +21,7 @@ services:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
       - DATABASE_URL=sqlite+aiosqlite:///./data/swiftgate.db
+      - REDIS_URL=redis://redis:6379/0
       - ENV=production
       - TOKEN_MARGIN=0.01
       - ADMIN_KEY=${ADMIN_KEY:-}
@@ -19,6 +32,9 @@ services:
       # - DEEPINFRA_API_KEY=...
     volumes:
       - backend-data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s

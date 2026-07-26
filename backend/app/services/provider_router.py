@@ -77,9 +77,20 @@ async def route_by_strategy(
 ) -> list[tuple[Model, Provider]]:
     """Build a failover chain based on routing strategy.
 
+    Applies active RoutingRules first (highest priority first), then falls
+    back to the default strategy if no rule matches.
+
     If model_id is specified, use it as primary with failover.
-    If model_id is None, use the strategy to pick the best model.
+    If model_id is None, use the strategy (or matching rule) to pick the best model.
     """
+    # ── Check routing rules first ──
+    rules = await _get_matching_rules(db, strategy)
+    if rules:
+        for rule in rules:
+            chain = await _apply_rule(db, rule)
+            if chain:
+                return chain
+
     if model_id:
         # Find the requested model
         result = await db.execute(
@@ -127,3 +138,72 @@ RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 def should_retry(status_code: int, attempt: int) -> bool:
     """Check if a failed request should be retried at another provider."""
     return status_code in RETRYABLE_STATUS_CODES and attempt < MAX_RETRIES
+
+
+# ─── Routing rules integration ────────────────────────────────────────
+
+async def _get_matching_rules(db: AsyncSession, strategy: str) -> list:
+    """Get active routing rules, ordered by priority."""
+    from app.models import RoutingRule
+    result = await db.execute(
+        select(RoutingRule)
+        .where(RoutingRule.is_active == True)  # noqa: E712
+        .order_by(RoutingRule.priority, RoutingRule.created_at.desc())
+    )
+    return result.scalars().all()
+
+
+async def _apply_rule(db: AsyncSession, rule) -> list[tuple[Model, Provider]]:
+    """Apply a single routing rule and return a failover chain if it matches."""
+    # If the rule specifies a target model, route directly to it
+    if rule.target_model_id:
+        result = await db.execute(
+            select(Model)
+            .options(selectinload(Model.provider))
+            .where(Model.model_id == rule.target_model_id, Model.is_active == True)  # noqa: E712
+        )
+        model = result.scalar_one_or_none()
+        if model:
+            return await get_failover_chain(db, model)
+
+    # Build query with rule constraints
+    stmt = (
+        select(Model)
+        .options(selectinload(Model.provider))
+        .where(Model.is_active == True)  # noqa: E712
+    )
+
+    if rule.task_type:
+        stmt = stmt.where(Model.category == rule.task_type)
+    if rule.model_category:
+        stmt = stmt.where(Model.category == rule.model_category)
+    if rule.max_cost_per_request_cents:
+        # Filter by prompt price (rough proxy for cost-per-request)
+        stmt = stmt.where(
+            (Model.prompt_price * 1000) <= rule.max_cost_per_request_cents / 10
+        )
+    if rule.min_quality_score:
+        stmt = stmt.where(Model.quality_score >= rule.min_quality_score)
+
+    # Apply strategy from rule (or default)
+    strat = rule.strategy or "balanced"
+    if strat == "cheapest":
+        stmt = stmt.order_by(Model.prompt_price.asc(), Model.completion_price.asc())
+    elif strat == "fastest":
+        stmt = stmt.order_by(Model.speed_score.desc())
+    elif strat == "quality":
+        stmt = stmt.order_by(Model.quality_score.desc())
+    else:
+        stmt = stmt.order_by(Model.quality_score.desc(), Model.prompt_price.asc())
+
+    stmt = stmt.limit(5)
+    result = await db.execute(stmt)
+    models = result.scalars().all()
+
+    chain: list[tuple[Model, Provider]] = []
+    for m in models:
+        p = m.provider
+        if p and p.active and _get_provider_key(p):
+            chain.append((m, p))
+
+    return chain

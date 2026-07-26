@@ -92,7 +92,7 @@ PROVIDERS = [
     {
         "name": "perplexity",
         "display_name": "Perplexity AI",
-        "base_url": "https://api.perplexity.ai",
+        "base_url": "https://api.perplexity.ai/v1",
         "api_key_env": "PERPLEXITY_API_KEY",
         "priority": 20,
     },

@@ -18,7 +18,7 @@ import hashlib
 import json
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
@@ -263,11 +263,15 @@ async def _record_usage(
         if total_cost > 0:
             pred_error = abs(pred - total_cost) / total_cost * 100
 
-    task_type = classify_task(
-        [m if isinstance(m, dict) else m.model_dump() for m in
-         [Message(**m) if isinstance(m, dict) else m
-          for m in request_body.get("messages", [])]]
-    )
+    # Robustly classify task type — don't let a bad message lose the entire record
+    try:
+        task_type = classify_task(
+            [m if isinstance(m, dict) else m.model_dump() for m in
+             [Message(**m) if isinstance(m, dict) else m
+              for m in request_body.get("messages", [])]]
+        )
+    except Exception:
+        task_type = "chat"  # safe fallback
 
     record = UsageRecord(
         api_key_id=api_key.id if api_key else None,
@@ -291,7 +295,7 @@ async def _record_usage(
     if api_key:
         api_key.total_spend_cents += total_cost
         api_key.total_requests += 1
-        api_key.last_used = datetime.utcnow()
+        api_key.last_used = datetime.now(timezone.utc)
 
     # Update agent spend if agent_id is set
     if agent_id:
@@ -303,10 +307,27 @@ async def _record_usage(
         if agent:
             agent.spend_cents += total_cost
             agent.request_count += 1
-            agent.last_active = datetime.utcnow()
+            agent.last_active = datetime.now(timezone.utc)
             # Check if budget now exceeded
             if agent.budget_cents and agent.spend_cents >= agent.budget_cents:
                 agent.status = "budget_exceeded"
+                await _create_budget_alert(
+                    db, api_key.id if api_key else None, agent_id,
+                    100, agent.spend_cents, agent.budget_cents,
+                    f"Agent '{agent_id}' reached 100% of budget"
+                )
+
+    # Check budget thresholds for API key (50%, 80%, 100%)
+    if api_key and api_key.monthly_budget_cents:
+        pct = (api_key.total_spend_cents / api_key.monthly_budget_cents) * 100
+        for threshold in (50, 80, 100):
+            if pct >= threshold:
+                await _create_budget_alert(
+                    db, api_key.id, agent_id,
+                    threshold, api_key.total_spend_cents, api_key.monthly_budget_cents,
+                    f"API key '{api_key.name}' reached {threshold}% of monthly budget"
+                )
+                break  # only fire highest threshold
 
     # Feed the ML predictor (the data flywheel)
     if completion_tokens > 0:
@@ -319,6 +340,39 @@ async def _record_usage(
         )
 
     await db.flush()
+
+
+async def _create_budget_alert(
+    db: AsyncSession,
+    api_key_id: int | None,
+    agent_id: str | None,
+    threshold_pct: int,
+    spend_cents: int,
+    budget_cents: int,
+    message: str,
+) -> None:
+    """Create a budget alert if one doesn't already exist for this threshold."""
+    from app.models import BudgetAlert
+    # Only create if one doesn't exist for this key+threshold in the current billing cycle
+    result = await db.execute(
+        select(BudgetAlert).where(
+            BudgetAlert.api_key_id == api_key_id if api_key_id else False,
+            BudgetAlert.threshold_pct == threshold_pct,
+            BudgetAlert.acknowledged == False,  # noqa: E712
+        ).limit(1)
+    )
+    if result.scalar_one_or_none():
+        return  # already alerted
+    alert = BudgetAlert(
+        api_key_id=api_key_id or 0,
+        agent_id=agent_id,
+        threshold_pct=threshold_pct,
+        spend_cents=spend_cents,
+        budget_cents=budget_cents,
+        message=message,
+    )
+    db.add(alert)
+    logger.info(f"Budget alert: {message}")
 
 
 # ─── Budget enforcement ────────────────────────────────────────────────
@@ -424,6 +478,17 @@ async def chat_completions(
       - Post-flight accuracy measurement
     """
     body = await request.json()
+
+    # ── Input validation (M3/M4) ──
+    messages = body.get("messages", [])
+    if not messages or not isinstance(messages, list):
+        raise HTTPException(400, "messages array is required")
+    if len(messages) > 100:
+        raise HTTPException(400, f"Too many messages: {len(messages)} (max 100)")
+    # Total prompt size limit (512KB — prevents DoS)
+    prompt_size = len(str(body).encode())
+    if prompt_size > 512_000:
+        raise HTTPException(413, f"Request body too large: {prompt_size} bytes (max 512KB)")
 
     try:
         req = ChatCompletionRequest(**body)
@@ -606,9 +671,11 @@ async def _handle_non_streaming(
             latency_ms, status="error", agent_id=agent_id,
         )
         await db.commit()
+        # Sanitize error — don't echo upstream response body (may contain keys/data)
         raise HTTPException(
             response.status_code,
-            f"Upstream error from {provider.name}: {response.text[:500]}"
+            f"Upstream provider {provider.name} returned error {response.status_code}. "
+            f"Check provider API key and request format."
         )
 
     response_data = response.json()
@@ -635,6 +702,7 @@ async def _handle_non_streaming(
                 api_key_id=api_key.id if api_key else None,
                 saved_cost_cents=saved_cost,
                 saved_tokens=saved_tokens,
+                is_shared=settings.CACHE_SHARED_DEFAULT,
             )
         except Exception as e:
             logger.warning(f"Failed to store cache entry: {e}")
@@ -649,13 +717,31 @@ async def _handle_non_streaming(
         db, api_key, model, body, response_data, prediction,
         latency_ms, agent_id=agent_id,
     )
+
+    # Implicit quality signal: multi-turn conversation = positive signal
+    # (user continued the conversation, implying satisfaction)
+    if len(body.get("messages", [])) > 1:
+        try:
+            from app.services.quality_router import detect_implicit_signal
+            await detect_implicit_signal(
+                db=db,
+                api_key_id=api_key.id if api_key else None,
+                model_served=model.model_id,
+                task_type=prediction.get("task_type", "chat") if prediction else "chat",
+                usage_record_id=None,
+                conversation_continued=True,
+            )
+        except Exception:
+            pass  # quality signals are best-effort
+
     await db.commit()
 
-    # Embed prediction info in response
+    # Embed prediction info in response — use same margin as recorded cost
     if prediction:
+        margin = 1 + settings.TOKEN_MARGIN
         actual_cost = (
-            int(float(model.prompt_price) * response_data.get("usage", {}).get("prompt_tokens", 0) * 10000) +
-            int(float(model.completion_price) * response_data.get("usage", {}).get("completion_tokens", 0) * 10000)
+            int(float(model.prompt_price) * response_data.get("usage", {}).get("prompt_tokens", 0) * margin * 10000) +
+            int(float(model.completion_price) * response_data.get("usage", {}).get("completion_tokens", 0) * margin * 10000)
         )
         response_data["swiftgate"] = {
             "predicted_cost_cents": prediction["costs"]["estimated_total_cents"],

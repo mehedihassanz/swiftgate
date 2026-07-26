@@ -15,7 +15,7 @@ Endpoints:
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -153,7 +153,7 @@ async def kill_agent(agent_id: str, db: AsyncSession = Depends(get_db), _admin: 
         raise HTTPException(404, f"Agent '{agent_id}' not found")
 
     agent.status = "killed"
-    agent.killed_at = datetime.utcnow()
+    agent.killed_at = datetime.now(timezone.utc)
     await db.commit()
     return {"killed": True, "agent_id": agent_id, "killed_at": agent.killed_at.isoformat()}
 
@@ -198,7 +198,7 @@ async def reset_agent_budget(agent_id: str, db: AsyncSession = Depends(get_db), 
 
     agent.spend_cents = 0
     agent.request_count = 0
-    agent.budget_reset_at = datetime.utcnow()
+    agent.budget_reset_at = datetime.now(timezone.utc)
     if agent.status == "budget_exceeded":
         agent.status = "active"
     await db.commit()
@@ -259,7 +259,7 @@ async def record_event(
 
     # Update agent spend
     agent.spend_cents += body.cost_cents
-    agent.last_active = datetime.utcnow()
+    agent.last_active = datetime.now(timezone.utc)
 
     # Check budget
     if agent.budget_cents and agent.spend_cents >= agent.budget_cents:

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import DashboardPage from "./pages/DashboardPage";
 import PredictPage from "./pages/PredictPage";
@@ -9,26 +9,46 @@ import ApiKeysPage from "./pages/ApiKeysPage";
 import AgentsPage from "./pages/AgentsPage";
 import CachePage from "./pages/CachePage";
 import QualityPage from "./pages/QualityPage";
+import LoginPage from "./pages/LoginPage";
+import { AuthProvider, useAuth } from "./auth";
+
+function ProtectedRoutes() {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return (
+    <div className="flex min-h-screen bg-ink-950">
+      <Sidebar />
+      <main className="flex-1 overflow-auto">
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/predict" element={<PredictPage />} />
+          <Route path="/compare" element={<ComparePage />} />
+          <Route path="/usage" element={<UsagePage />} />
+          <Route path="/keys" element={<ApiKeysPage />} />
+          <Route path="/agents" element={<AgentsPage />} />
+          <Route path="/quality" element={<QualityPage />} />
+          <Route path="/cache" element={<CachePage />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto bg-ink-50 p-6">
-          <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/predict" element={<PredictPage />} />
-            <Route path="/compare" element={<ComparePage />} />
-            <Route path="/usage" element={<UsagePage />} />
-            <Route path="/keys" element={<ApiKeysPage />} />
-            <Route path="/agents" element={<AgentsPage />} />
-            <Route path="/quality" element={<QualityPage />} />
-            <Route path="/cache" element={<CachePage />} />
-            <Route path="/admin" element={<AdminPage />} />
-          </Routes>
-        </main>
-      </div>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/*" element={<ProtectedRoutes />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

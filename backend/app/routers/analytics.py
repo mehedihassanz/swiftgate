@@ -1,7 +1,7 @@
 """Usage analytics router — spend tracking, model stats, budget alerts."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import desc, func, select
@@ -20,7 +20,7 @@ async def get_usage(
     db: AsyncSession = Depends(get_db),
 ):
     """Get usage analytics for a time period."""
-    since = datetime.utcnow() - timedelta(days=days)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
 
     stmt = (
         select(UsageRecord)
@@ -95,7 +95,7 @@ async def get_daily_usage(
     db: AsyncSession = Depends(get_db),
 ):
     """Get daily cost breakdown for charts."""
-    since = datetime.utcnow() - timedelta(days=days)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
 
     result = await db.execute(
         select(UsageRecord)

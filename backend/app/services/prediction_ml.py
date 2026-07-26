@@ -23,7 +23,7 @@ import math
 import os
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from sqlalchemy import desc, func, select
@@ -236,7 +236,7 @@ class OutputTokenPredictor:
 
         This is the batch training step — run on startup or periodically.
         """
-        since = datetime.utcnow() - timedelta(days=days)
+        since = datetime.now(timezone.utc) - timedelta(days=days)
 
         result = await db.execute(
             select(
@@ -261,7 +261,7 @@ class OutputTokenPredictor:
 
         buckets_trained = len(self._buckets)
         self._total_samples = total_samples
-        self._last_trained = datetime.utcnow()
+        self._last_trained = datetime.now(timezone.utc)
 
         logger.info(
             f"ML predictor trained: {total_samples} samples across {buckets_trained} buckets"

@@ -1,5 +1,6 @@
-import { Zap, Gauge, BarChart3, Calculator, GitCompare, Settings, Key, Bot, Database, Trophy } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { Zap, Gauge, BarChart3, Calculator, GitCompare, Settings, Key, Bot, Database, Trophy, LogOut } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../auth";
 
 const cls = (...args: (string | false | undefined)[]) => args.filter(Boolean).join(" ");
 
@@ -16,6 +17,8 @@ const NAV = [
 ];
 
 export default function Sidebar() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   return (
     <aside className="flex w-60 flex-col border-r border-ink-200 bg-white">
       <div className="flex items-center gap-2 px-5 py-5">
@@ -47,6 +50,13 @@ export default function Sidebar() {
       </nav>
 
       <div className="border-t border-ink-200 p-3">
+        <button
+          onClick={() => { logout(); navigate("/login"); }}
+          className="mb-2 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-ink-600 transition hover:bg-red-50 hover:text-red-600"
+        >
+          <LogOut className="h-4 w-4" />
+          Logout
+        </button>
         <div className="rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500">
           <div className="font-semibold text-ink-700">⚡ Cost Intelligence</div>
           <div className="mt-0.5">5 data flywheels · 43 endpoints</div>

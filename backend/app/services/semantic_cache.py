@@ -22,7 +22,7 @@ import hashlib
 import json
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from sqlalchemy import delete, func, select
@@ -174,7 +174,7 @@ async def check_cache(
         )
 
     # Not expired
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     stmt = stmt.where(
         (CacheEntry.expires_at == None) | (CacheEntry.expires_at > now)  # noqa: E711
     )
@@ -277,7 +277,7 @@ async def store_cache(
     if ttl_hours is None:
         ttl_hours = TASK_TTL_HOURS.get(task_type or "chat", DEFAULT_TTL_HOURS)
 
-    expires_at = datetime.utcnow() + timedelta(hours=ttl_hours) if ttl_hours > 0 else None
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=ttl_hours) if ttl_hours > 0 else None
 
     entry = CacheEntry(
         content_hash=_content_hash(messages),
@@ -299,7 +299,7 @@ async def store_cache(
 
 async def get_cache_stats(db: AsyncSession) -> dict[str, Any]:
     """Get aggregate cache statistics for the dashboard."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # Total entries
     total_result = await db.execute(select(func.count(CacheEntry.id)))
@@ -349,7 +349,7 @@ async def invalidate_cache(
         stmt = stmt.where(CacheEntry.model_id == model_id)
 
     if expired_only:
-        stmt = stmt.where(CacheEntry.expires_at <= datetime.utcnow())
+        stmt = stmt.where(CacheEntry.expires_at <= datetime.now(timezone.utc))
 
     result = await db.execute(stmt)
     await db.commit()

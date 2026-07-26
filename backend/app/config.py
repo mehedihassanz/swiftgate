@@ -1,8 +1,18 @@
-"""Application configuration — reads from environment variables."""
+"""Application configuration — reads from environment variables.
+
+Optionally loads .env file if present (via python-dotenv).
+"""
 from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+
+# Load .env file if present (silent no-op if file doesn't exist)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 
 def _get_bool(key: str, default: bool = False) -> bool:

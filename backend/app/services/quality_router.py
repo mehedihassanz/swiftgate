@@ -11,7 +11,7 @@ Public API:
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
 
@@ -48,7 +48,7 @@ async def get_quality_index(
     Returns: (weighted_score, confidence, sample_size)
     Falls back to the model's static quality_score if insufficient data.
     """
-    since = datetime.utcnow() - timedelta(days=QUALITY_WINDOW_DAYS)
+    since = datetime.now(timezone.utc) - timedelta(days=QUALITY_WINDOW_DAYS)
 
     result = await db.execute(
         select(QualityScore)
@@ -75,7 +75,7 @@ async def get_quality_index(
 
     for i, qs in enumerate(scores):
         # Recency weight: most recent = highest
-        age_days = (datetime.utcnow() - qs.created_at).total_seconds() / 86400
+        age_days = (datetime.now(timezone.utc) - qs.created_at).total_seconds() / 86400
         recency_weight = max(0.1, 1.0 - age_days / QUALITY_WINDOW_DAYS)
 
         # Signal weight
