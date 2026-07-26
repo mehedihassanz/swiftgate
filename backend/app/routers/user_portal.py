@@ -8,6 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -99,6 +100,8 @@ async def register(
         user = await register_user(db, req.email, req.password, req.name)
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
+    except IntegrityError:
+        raise HTTPException(status_code=409, detail="Email already registered")
 
     token = create_access_token(user.id, user.email)
     return TokenResponse(
