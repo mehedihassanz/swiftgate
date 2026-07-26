@@ -21,8 +21,10 @@ export default function LoginPage() {
       if (resp.ok) {
         login(key.trim());
         navigate("/");
-      } else {
+      } else if (resp.status === 401) {
         setError("Invalid admin key. Please check and try again.");
+      } else {
+        setError(`Server error (${resp.status}). Please try again.`);
       }
     } catch {
       // In development mode with no ADMIN_KEY set, allow login anyway
@@ -30,7 +32,7 @@ export default function LoginPage() {
         login(key.trim() || "dev");
         navigate("/");
       } else {
-        setError("Cannot reach server. Is the backend running?");
+        setError("Cannot reach server. Please try again in a moment.");
       }
     }
   };

@@ -20,9 +20,9 @@ function ProtectedRoutes() {
   }
 
   return (
-    <div className="flex min-h-screen bg-ink-950">
+    <div className="flex min-h-screen bg-ink-50">
       <Sidebar />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto p-6">
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/predict" element={<PredictPage />} />
