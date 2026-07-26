@@ -250,3 +250,67 @@ class AgentEvent(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), index=True)
 
+
+class QualityScore(Base):
+    """Empirically measured quality score per (model, task_type).
+
+    Three tiers of quality signals:
+      - implicit: user retries, continues conversation, abandons
+      - explicit: thumbs up/down, regenerate requests
+      - automated: LLM-as-judge evaluator scores (sampled 1% of requests)
+
+    The rolling weighted average feeds the quality-aware router.
+    This is the second data flywheel: more requests → better quality data →
+    better routing → better outputs → more requests.
+    """
+
+    __tablename__ = "quality_scores"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    model_id: Mapped[str] = mapped_column(String(200), index=True)
+    task_type: Mapped[str] = mapped_column(String(50), index=True)
+
+    # Score 0-10
+    score: Mapped[float] = mapped_column(Numeric(3, 2))
+
+    # Signal source: "implicit", "explicit", "automated"
+    signal_source: Mapped[str] = mapped_column(String(20), default="implicit")
+
+    # Link to the usage record that generated this score
+    usage_record_id: Mapped[int | None] = mapped_column(ForeignKey("usage_records.id"), nullable=True)
+
+    # What signal triggered this? e.g. "user_retry", "thumbs_up", "thumbs_down",
+    # "conversation_continued", "llm_judge", "regenerate"
+    signal_type: Mapped[str] = mapped_column(String(50))
+
+    # Metadata
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), index=True)
+
+
+class RoutingRule(Base):
+    """Configurable routing rules — maps request patterns to model choices.
+
+    Enables natural-language-like routing without the NL parsing:
+    "use cheapest for coding tasks" or "use Claude for production code"
+    """
+
+    __tablename__ = "routing_rules"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(200))
+    # Condition: what triggers this rule
+    task_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    model_category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    max_cost_per_request_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    min_quality_score: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
+
+    # Action: what to do when this rule matches
+    strategy: Mapped[str] = mapped_column(String(50), default="balanced")
+    # "cheapest", "fastest", "balanced", "quality", "specific_model"
+    target_model_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
+
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    priority: Mapped[int] = mapped_column(Integer, default=100)  # lower = checked first
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+
