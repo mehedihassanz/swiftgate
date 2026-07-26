@@ -10,7 +10,10 @@ import AgentsPage from "./pages/AgentsPage";
 import CachePage from "./pages/CachePage";
 import QualityPage from "./pages/QualityPage";
 import LoginPage from "./pages/LoginPage";
+import PortalAuthPage from "./pages/PortalAuthPage";
+import PortalDashboardPage from "./pages/PortalDashboardPage";
 import { AuthProvider, useAuth } from "./auth";
+import { UserAuthProvider } from "./userAuth";
 
 function ProtectedRoutes() {
   const { isAuthenticated } = useAuth();
@@ -43,12 +46,20 @@ function ProtectedRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/*" element={<ProtectedRoutes />} />
-        </Routes>
-      </BrowserRouter>
+      <UserAuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* User portal (OpenRouter-style) */}
+            <Route path="/portal" element={<PortalDashboardPage />} />
+            <Route path="/portal/login" element={<PortalAuthPage mode="login" />} />
+            <Route path="/portal/signup" element={<PortalAuthPage mode="signup" />} />
+
+            {/* Admin dashboard */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/*" element={<ProtectedRoutes />} />
+          </Routes>
+        </BrowserRouter>
+      </UserAuthProvider>
     </AuthProvider>
   );
 }

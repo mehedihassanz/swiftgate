@@ -89,6 +89,26 @@ class Model(Base):
     provider: Mapped["Provider"] = relationship()
 
 
+class User(Base):
+    """A registered platform user — signs up, manages their own keys, sees their usage."""
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+
+    # Credits in USD cents (avoids float precision issues)
+    credits_cents: Mapped[int] = mapped_column(Integer, default=0)
+
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+
+    # API keys belonging to this user
+    api_keys: Mapped[list["ApiKey"]] = relationship("ApiKey", back_populates="user")
+
+
 class ApiKey(Base):
     """A user API key with optional spend limits."""
 
@@ -99,6 +119,12 @@ class ApiKey(Base):
     key_prefix: Mapped[str] = mapped_column(String(20))  # "sg-...abc" for display
     name: Mapped[str] = mapped_column(String(200), default="default")
     user_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Link to registered user (nullable for admin-created legacy keys)
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True, index=True
+    )
+    user: Mapped["User | None"] = relationship("User", back_populates="api_keys")
 
     # Spend limits (in USD cents to avoid float issues)
     monthly_budget_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)

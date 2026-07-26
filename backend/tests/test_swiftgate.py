@@ -28,7 +28,10 @@ from app.services.pricing import seed_database
 @pytest_asyncio.fixture(scope="function")
 async def db_session():
     """Fresh database for each test."""
-    await init_db()
+    # Drop and recreate to pick up schema changes
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
     async with async_session() as db:
         await seed_database(db)
         await db.commit()
@@ -39,7 +42,9 @@ async def db_session():
 @pytest_asyncio.fixture(scope="function")
 async def client():
     """HTTP test client."""
-    await init_db()
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
     async with async_session() as db:
         await seed_database(db)
         await db.commit()

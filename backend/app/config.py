@@ -39,6 +39,11 @@ class Settings:
     # Admin auth (required in production)
     ADMIN_KEY: str = os.environ.get("ADMIN_KEY", "")
 
+    # JWT secret for user auth (tokens for the user portal)
+    JWT_SECRET: str = os.environ.get("JWT_SECRET", "swiftgate-dev-secret-change-in-production")
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRY_HOURS: int = int(os.environ.get("JWT_EXPIRY_HOURS", "168"))  # 7 days
+
     # CORS — comma-separated allowlist. Use "*" for development only.
     CORS_ORIGINS: str = os.environ.get("CORS_ORIGINS", "*")
 
