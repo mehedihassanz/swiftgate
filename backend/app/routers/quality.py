@@ -78,24 +78,6 @@ async def submit_feedback(body: FeedbackRequest, db: AsyncSession = Depends(get_
     }
 
 
-@router.get("/quality/{model_id}")
-async def get_model_quality(
-    model_id: str,
-    task_type: str = Query("chat"),
-    db: AsyncSession = Depends(get_db),
-):
-    """Get the empirical quality index for a model+task."""
-    score, confidence, samples = await get_quality_index(db, model_id, task_type)
-    return {
-        "model_id": model_id,
-        "task_type": task_type,
-        "quality_score": score,
-        "confidence": confidence,
-        "sample_size": samples,
-        "source": "empirical" if samples >= 10 else "static_fallback",
-    }
-
-
 @router.post("/quality/route")
 async def quality_route(body: QualityRouteRequest, db: AsyncSession = Depends(get_db)):
     """Get quality-per-dollar routing recommendation.
@@ -150,6 +132,26 @@ async def quality_leaderboard(
             }
             for r in rows
         ],
+    }
+
+
+# NOTE: This route MUST come after /quality/leaderboard and /quality/route
+# because FastAPI matches {model_id} greedily.
+@router.get("/quality/{model_id}")
+async def get_model_quality(
+    model_id: str,
+    task_type: str = Query("chat"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get the empirical quality index for a model+task."""
+    score, confidence, samples = await get_quality_index(db, model_id, task_type)
+    return {
+        "model_id": model_id,
+        "task_type": task_type,
+        "quality_score": score,
+        "confidence": confidence,
+        "sample_size": samples,
+        "source": "empirical" if samples >= 10 else "static_fallback",
     }
 
 

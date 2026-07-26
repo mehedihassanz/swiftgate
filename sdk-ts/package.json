@@ -1,0 +1,19 @@
+{
+  "name": "@swiftgate/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript client SDK for SwiftGate — AI model gateway with cost intelligence",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "license": "MIT",
+  "keywords": ["swiftgate", "ai", "gateway", "openai", "cost", "routing"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mehedihassanz/swiftgate",
+    "directory": "sdk-ts"
+  }
+}

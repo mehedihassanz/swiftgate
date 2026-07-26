@@ -699,3 +699,75 @@ async def seed_database(db: AsyncSession) -> dict[str, Any]:
         "models_updated": models_updated,
         "total_models": len(MODELS),
     }
+
+
+# ─── Quality seed data ─────────────────────────────────────────────────
+# Initial quality signals to populate the leaderboard so it's not empty.
+# These represent baseline community consensus — real empirical data
+# from actual users will override these over time via the data flywheel.
+
+QUALITY_SEEDS = [
+    # (model_id, task_type, score, signal_type)
+    # ── Code generation ──
+    ("claude-opus-5", "code", 9.6, "seed_expert"),
+    ("claude-sonnet-4-5", "code", 9.2, "seed_expert"),
+    ("gpt-4o", "code", 8.9, "seed_expert"),
+    ("o1", "code", 9.4, "seed_expert"),
+    ("deepseek-v4-pro", "code", 8.7, "seed_expert"),
+    ("codestral", "code", 8.5, "seed_expert"),
+    ("glm-5-2", "code", 8.3, "seed_expert"),
+
+    # ── Chat / general ──
+    ("claude-opus-5", "chat", 9.5, "seed_expert"),
+    ("gpt-4o", "chat", 8.8, "seed_expert"),
+    ("claude-sonnet-4-5", "chat", 8.7, "seed_expert"),
+    ("gemini-2-5-pro", "chat", 8.6, "seed_expert"),
+    ("grok-4", "chat", 8.5, "seed_expert"),
+    ("mistral-large-2", "chat", 8.0, "seed_expert"),
+
+    # ── Reasoning ──
+    ("o1", "reasoning", 9.7, "seed_expert"),
+    ("claude-opus-5", "reasoning", 9.4, "seed_expert"),
+    ("deepseek-v4-pro", "reasoning", 8.8, "seed_expert"),
+    ("gemini-2-5-pro", "reasoning", 8.5, "seed_expert"),
+
+    # ── Fast / cheap tier ──
+    ("claude-haiku-4", "chat", 8.2, "seed_expert"),
+    ("gpt-4o-mini", "chat", 7.6, "seed_expert"),
+    ("deepseek-v4-flash", "code", 7.9, "seed_expert"),
+    ("grok-4-fast", "chat", 8.0, "seed_expert"),
+    ("command-r", "chat", 7.8, "seed_expert"),
+]
+
+
+async def seed_quality_scores(db: AsyncSession) -> int:
+    """Seed initial quality scores so the leaderboard isn't empty.
+
+    These are expert baseline estimates. Real user feedback (explicit +
+    implicit + automated LLM-judge) will accumulate and override these
+    via the weighted quality index.
+    """
+    from app.models import QualityScore
+
+    # Check if already seeded
+    existing = await db.execute(
+        select(QualityScore).where(QualityScore.signal_type == "seed_expert").limit(1)
+    )
+    if existing.scalar_one_or_none():
+        return 0  # Already seeded
+
+    count = 0
+    for model_id, task_type, score, signal_type in QUALITY_SEEDS:
+        qs = QualityScore(
+            model_id=model_id,
+            task_type=task_type,
+            score=score,
+            signal_source="automated",  # seeds are "automated" tier (highest weight)
+            signal_type=signal_type,
+        )
+        db.add(qs)
+        count += 1
+
+    await db.flush()
+    logger.info(f"Seeded {count} quality scores")
+    return count

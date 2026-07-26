@@ -23,6 +23,10 @@ async def lifespan(app: FastAPI):
     from app.database import async_session
     async with async_session() as db:
         result = await seed_database(db)
+        # Also seed quality scores
+        from app.services.pricing import seed_quality_scores
+        quality_count = await seed_quality_scores(db)
+        result["quality_scores_seeded"] = quality_count
         await db.commit()
         print(f"[SwiftGate] Database seeded: {result}")
 
