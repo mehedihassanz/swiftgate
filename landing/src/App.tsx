@@ -1,7 +1,8 @@
 import { Zap, Calculator, GitCompare, BarChart3, TrendingDown, Shield, Check, Code2, ArrowRight, DollarSign } from "lucide-react";
 
-// Relative path — points to the web dashboard service
-const DASHBOARD_URL = "/app/";
+// Links to the web service (different Railway service)
+const PORTAL_URL = "https://web-production-8fa1c.up.railway.app/portal/signup";
+const DASHBOARD_URL = "https://web-production-8fa1c.up.railway.app/login";
 
 export default function App() {
   return (
@@ -19,6 +20,9 @@ export default function App() {
             <a href="#features" className="text-ink-600 hover:text-ink-900">Features</a>
             <a href="#how" className="text-ink-600 hover:text-ink-900">How it Works</a>
             <a href="#pricing" className="text-ink-600 hover:text-ink-900">Pricing</a>
+            <a href={PORTAL_URL} className="rounded-lg border border-ink-200 px-4 py-1.5 font-medium text-ink-700 hover:bg-ink-50">
+              Sign Up
+            </a>
             <a href={DASHBOARD_URL} className="rounded-lg bg-brand-600 px-4 py-1.5 font-medium text-white hover:bg-brand-700">
               Dashboard
             </a>
@@ -39,25 +43,25 @@ export default function App() {
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-ink-600">
             SwiftGate is an AI model gateway that predicts exact request costs before sending.
-            Compare 14+ models across 7 providers. Route intelligently. Never get a surprise bill again.
+            Compare 34+ models across 18 providers. Route intelligently. Never get a surprise bill again.
           </p>
           <div className="mt-8 flex justify-center gap-3">
-            <a href={DASHBOARD_URL} className="flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-medium text-white hover:bg-brand-700">
-              Try Cost Predictor <ArrowRight className="h-4 w-4" />
+            <a href={PORTAL_URL} className="flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-medium text-white hover:bg-brand-700">
+              Get Your API Key <ArrowRight className="h-4 w-4" />
             </a>
             <a href="#features" className="rounded-lg border border-ink-200 px-6 py-3 text-sm font-medium text-ink-700 hover:bg-ink-50">
               See Features
             </a>
           </div>
-          <p className="mt-4 text-xs text-ink-400">No signup required · Free tier · OpenAI-compatible API</p>
+          <p className="mt-4 text-xs text-ink-400">Free signup · No credit card · OpenAI-compatible API</p>
         </div>
       </section>
 
       {/* Stats bar */}
       <section className="border-y border-ink-100 bg-ink-50">
         <div className="mx-auto grid max-w-4xl grid-cols-4 gap-4 px-6 py-8">
-          <Stat value="14+" label="Models" />
-          <Stat value="7" label="Providers" />
+          <Stat value="34+" label="Models" />
+          <Stat value="18" label="Providers" />
           <Stat value="1%" label="Token margin" sub="vs OpenRouter 5.5%" />
           <Stat value="Exact" label="Token counting" sub="tiktoken + HF" />
         </div>
@@ -134,9 +138,9 @@ export default function App() {
       <section className="border-t border-ink-100 bg-gradient-to-br from-brand-600 to-brand-800 py-16">
         <div className="mx-auto max-w-2xl px-6 text-center">
           <h2 className="text-3xl font-bold text-white">Stop guessing. Start predicting.</h2>
-          <p className="mt-3 text-brand-100">Join the gateway that tells you the price before you buy.</p>
-          <a href={DASHBOARD_URL} className="mt-6 inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-semibold text-brand-700 hover:bg-brand-50">
-            Open Dashboard <ArrowRight className="h-4 w-4" />
+          <p className="mt-3 text-brand-100">Sign up free and get your API key in seconds.</p>
+          <a href={PORTAL_URL} className="mt-6 inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-semibold text-brand-700 hover:bg-brand-50">
+            Get Your API Key <ArrowRight className="h-4 w-4" />
           </a>
         </div>
       </section>

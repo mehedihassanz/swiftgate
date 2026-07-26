@@ -297,6 +297,16 @@ async def _record_usage(
         api_key.total_requests += 1
         api_key.last_used = datetime.now(timezone.utc)
 
+        # Deduct credits from the user's balance
+        if api_key.user_id:
+            from app.models import User as UserModel
+            user_result = await db.execute(
+                select(UserModel).where(UserModel.id == api_key.user_id)
+            )
+            user_obj = user_result.scalar_one_or_none()
+            if user_obj:
+                user_obj.credits_cents = max(0, user_obj.credits_cents - total_cost)
+
     # Update agent spend if agent_id is set
     if agent_id:
         from app.models import Agent as AgentModel
@@ -380,6 +390,20 @@ async def _create_budget_alert(
 def _check_budget(api_key: ApiKey | None, predicted_cost_cents: int) -> None:
     if not api_key or not api_key.is_active:
         return
+
+    # Check user credits (if linked to a user)
+    if api_key.user and api_key.user.credits_cents <= 0:
+        raise HTTPException(
+            402,
+            f"No credits remaining. Please add credits to your account."
+        )
+    if api_key.user and api_key.user.credits_cents < predicted_cost_cents:
+        raise HTTPException(
+            402,
+            f"Insufficient credits. Remaining: ${api_key.user.credits_cents / 100:.4f}, "
+            f"Predicted cost: ${predicted_cost_cents / 10000:.4f}. "
+            f"Please add credits to your account."
+        )
 
     if api_key.per_request_limit_cents:
         if predicted_cost_cents > api_key.per_request_limit_cents:
@@ -568,6 +592,7 @@ async def chat_completions(
 
     # ── Try providers with failover ──
     last_error = None
+    shared_client = getattr(request.app.state, "http_client", None)
     for attempt, (model, provider) in enumerate(failover_chain):
         try:
             return await _forward_request(
@@ -575,6 +600,7 @@ async def chat_completions(
                 attempt, len(failover_chain),
                 pii_token_map=pii_token_map,
                 cache_enabled=settings.CACHE_ENABLED and cache_bypass,
+                http_client=shared_client,
             )
         except httpx.TimeoutException:
             logger.warning(f"Provider {provider.name} timed out (attempt {attempt + 1})")
@@ -607,6 +633,7 @@ async def _forward_request(
     total_attempts: int,
     pii_token_map=None,
     cache_enabled: bool = False,
+    http_client: httpx.AsyncClient | None = None,
 ):
     """Forward request to a single provider. Handles both streaming and non-streaming."""
     upstream_url, upstream_headers, upstream_body = _build_upstream_request(
@@ -617,11 +644,17 @@ async def _forward_request(
 
     # Use shared HTTP client for connection reuse (or fallback for tests)
     owns_client = False
-    try:
-        client = request.app.state.http_client
-    except AttributeError:
-        client = httpx.AsyncClient(timeout=120.0)
-        owns_client = True
+    if http_client:
+        client = http_client
+    else:
+        try:
+            from app.database import async_session
+            # Fallback: create a standalone client (tests, etc.)
+            client = httpx.AsyncClient(timeout=120.0)
+            owns_client = True
+        except Exception:
+            client = httpx.AsyncClient(timeout=120.0)
+            owns_client = True
 
     try:
         if req.stream:

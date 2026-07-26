@@ -31,13 +31,33 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem("swiftgate_user_token");
     const savedUser = localStorage.getItem("swiftgate_user");
     if (saved && savedUser) {
-      setToken(saved);
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem("swiftgate_user_token");
-        localStorage.removeItem("swiftgate_user");
-      }
+      // Verify token is still valid by calling /auth/me
+      fetch("/auth/me", {
+        headers: { Authorization: `Bearer ${saved}` },
+      })
+        .then((r) => {
+          if (r.ok) return r.json();
+          // Token expired or invalid — clear it
+          localStorage.removeItem("swiftgate_user_token");
+          localStorage.removeItem("swiftgate_user");
+          return null;
+        })
+        .then((data) => {
+          if (data) {
+            setToken(saved);
+            setUser(data);
+          }
+        })
+        .catch(() => {
+          // Network error — keep token, might work later
+          try {
+            setToken(saved);
+            setUser(JSON.parse(savedUser));
+          } catch {
+            localStorage.removeItem("swiftgate_user_token");
+            localStorage.removeItem("swiftgate_user");
+          }
+        });
     }
   }, []);
 
@@ -70,11 +90,18 @@ export function useUserAuth() {
 
 /**
  * fetch() wrapper that auto-injects the user JWT bearer token.
+ * On 401, clears the token and redirects to login.
  */
-export function userFetch(url: string, options: RequestInit = {}): Promise<Response> {
+export async function userFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const token = localStorage.getItem("swiftgate_user_token");
   const headers = new Headers(options.headers);
   headers.set("Content-Type", "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  return fetch(url, { ...options, headers });
+  const resp = await fetch(url, { ...options, headers });
+  if (resp.status === 401) {
+    localStorage.removeItem("swiftgate_user_token");
+    localStorage.removeItem("swiftgate_user");
+    window.location.href = "/portal/login";
+  }
+  return resp;
 }
