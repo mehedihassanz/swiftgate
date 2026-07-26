@@ -4,33 +4,71 @@
 """
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
+from app.config import settings
 from app.routers import admin, agents, analytics, apikeys, cache_pii, cost, gateway, quality
 from app.services.pricing import seed_database
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: create tables + seed pricing data."""
+    """Startup: create tables + seed pricing data + load ML model."""
+    import logging
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+    logger = logging.getLogger("swiftgate")
+
     await init_db()
 
-    # Seed the pricing database
+    # Seed the pricing database (only inserts new models, doesn't overwrite price changes)
     from app.database import async_session
     async with async_session() as db:
         result = await seed_database(db)
-        # Also seed quality scores
         from app.services.pricing import seed_quality_scores
         quality_count = await seed_quality_scores(db)
         result["quality_scores_seeded"] = quality_count
         await db.commit()
-        print(f"[SwiftGate] Database seeded: {result}")
+        logger.info(f"Database seeded: {result}")
+
+    # Load the ML prediction model (flywheel persistence)
+    try:
+        from app.services.prediction_ml import predictor
+        import asyncio as _aio
+        await _aio.to_thread(predictor.load)
+        logger.info("ML prediction model loaded")
+    except Exception as e:
+        logger.warning(f"Could not load ML model (will use heuristics): {e}")
+
+    # Log which providers have API keys configured
+    from app.config import settings
+    from app.services.pricing import PROVIDERS
+    configured = [p["name"] for p in PROVIDERS if os.environ.get(p["api_key_env"])]
+    logger.info(f"Providers with API keys: {configured or 'none — gateway will reject requests'}")
+
+    # Shared HTTP client for upstream provider calls (connection reuse)
+    import httpx as _httpx
+    shared_client = _httpx.AsyncClient(
+        timeout=_httpx.Timeout(connect=10.0, read=120.0, write=30.0, pool=5.0),
+        limits=_httpx.Limits(max_connections=100, max_keepalive_connections=20),
+    )
+    app.state.http_client = shared_client
+    logger.info("Shared HTTP client initialized")
 
     yield
+
+    # Graceful shutdown — close HTTP client + dispose DB engine
+    await shared_client.aclose()
+    from app.database import engine
+    await engine.dispose()
+    logger.info("HTTP client closed, database engine disposed")
 
 
 app = FastAPI(
@@ -42,8 +80,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS != "*" else ["*"],
+    allow_credentials=settings.CORS_ORIGINS != "*",
     allow_methods=["*"],
     allow_headers=["*"],
 )

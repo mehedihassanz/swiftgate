@@ -85,7 +85,7 @@ PROVIDERS = [
     {
         "name": "cohere",
         "display_name": "Cohere",
-        "base_url": "https://api.cohere.ai/v1",
+        "base_url": "https://api.cohere.com/v1",
         "api_key_env": "COHERE_API_KEY",
         "priority": 20,
     },
@@ -607,10 +607,11 @@ MODELS = [
 ]
 
 
-async def seed_database(db: AsyncSession) -> dict[str, Any]:
+async def seed_database(db: AsyncSession, overwrite_prices: bool = False) -> dict[str, Any]:
     """Seed providers and models. Idempotent — safe to call on every startup.
 
-    Updates existing entries with the latest pricing.
+    By default, does NOT overwrite existing model prices (respects admin overrides).
+    Set overwrite_prices=True to force-update pricing (used by POST /admin/seed).
     """
     providers_seeded = 0
     providers_skipped = 0
@@ -657,20 +658,21 @@ async def seed_database(db: AsyncSession) -> dict[str, Any]:
         model_id = mdata["model_id"]
 
         if model_id in model_map:
-            # Update pricing
-            m = model_map[model_id]
-            m.prompt_price = Decimal(mdata["prompt_price"])
-            m.completion_price = Decimal(mdata["completion_price"])
-            m.cached_price = Decimal(mdata["cached_price"]) if mdata.get("cached_price") else None
-            m.context_window = mdata["context_window"]
-            m.max_output = mdata["max_output"]
-            m.supports_tools = mdata["supports_tools"]
-            m.supports_vision = mdata["supports_vision"]
-            m.supports_json = mdata["supports_json"]
-            m.quality_score = mdata["quality_score"]
-            m.speed_score = mdata["speed_score"]
-            m.category = mdata["category"]
-            models_updated += 1
+            # Update pricing only if overwrite_prices is True (startup doesn't overwrite admin overrides)
+            if overwrite_prices:
+                m = model_map[model_id]
+                m.prompt_price = Decimal(mdata["prompt_price"])
+                m.completion_price = Decimal(mdata["completion_price"])
+                m.cached_price = Decimal(mdata["cached_price"]) if mdata.get("cached_price") else None
+                m.context_window = mdata["context_window"]
+                m.max_output = mdata["max_output"]
+                m.supports_tools = mdata["supports_tools"]
+                m.supports_vision = mdata["supports_vision"]
+                m.supports_json = mdata["supports_json"]
+                m.quality_score = mdata["quality_score"]
+                m.speed_score = mdata["speed_score"]
+                m.category = mdata["category"]
+                models_updated += 1
         else:
             prompt_price = Decimal(mdata.pop("prompt_price"))
             completion_price = Decimal(mdata.pop("completion_price"))

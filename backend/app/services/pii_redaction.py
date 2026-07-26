@@ -100,20 +100,20 @@ _PII_PATTERNS: list[tuple[str, re.Pattern, str]] = [
         "[REDACTED_SSN_{}]",
     ),
 
-    # Credit card numbers (13-19 digits, with Luhn-friendly grouping)
+    # Credit card numbers (13-19 digits with typical grouping — must have spaces/dashes)
     (
         "CREDIT_CARD",
         re.compile(
-            r"\b(?:\d[ -]*?){13,19}\b"
+            r"\b(?:\d{4}[- ]?){3}\d{1,4}\b"  # 4-4-4-(1-4) pattern: 13-19 digits
         ),
         "[REDACTED_CREDIT_CARD_{}]",
     ),
 
-    # API keys / bearer tokens (common formats)
+    # API keys / bearer tokens (common formats — including SwiftGate sg- keys)
     (
         "API_KEY",
         re.compile(
-            r"\b(?:sk-|pk-|rk-|Bearer )"
+            r"\b(?:sk-|pk-|rk-|sg-|Bearer )"
             r"[A-Za-z0-9]{20,}"
         ),
         "[REDACTED_API_KEY_{}]",

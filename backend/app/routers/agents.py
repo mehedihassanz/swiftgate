@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import Agent, AgentEvent, UsageRecord
+from app.auth import require_admin
 
 router = APIRouter(prefix="/v1/agents", tags=["agents"])
 
@@ -129,7 +130,7 @@ async def get_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.put("/{agent_id}")
-async def update_agent(agent_id: str, body: AgentUpdate, db: AsyncSession = Depends(get_db)):
+async def update_agent(agent_id: str, body: AgentUpdate, db: AsyncSession = Depends(get_db), _admin: bool = Depends(require_admin)):
     """Update agent settings."""
     result = await db.execute(select(Agent).where(Agent.agent_id == agent_id))
     agent = result.scalar_one_or_none()
@@ -144,7 +145,7 @@ async def update_agent(agent_id: str, body: AgentUpdate, db: AsyncSession = Depe
 
 
 @router.post("/{agent_id}/kill")
-async def kill_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
+async def kill_agent(agent_id: str, db: AsyncSession = Depends(get_db), _admin: bool = Depends(require_admin)):
     """Kill-switch — immediately blocks all future requests from this agent."""
     result = await db.execute(select(Agent).where(Agent.agent_id == agent_id))
     agent = result.scalar_one_or_none()
@@ -158,7 +159,7 @@ async def kill_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/{agent_id}/pause")
-async def pause_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
+async def pause_agent(agent_id: str, db: AsyncSession = Depends(get_db), _admin: bool = Depends(require_admin)):
     """Temporarily pause an agent. Requests will be blocked until resumed."""
     result = await db.execute(select(Agent).where(Agent.agent_id == agent_id))
     agent = result.scalar_one_or_none()
@@ -171,7 +172,7 @@ async def pause_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/{agent_id}/resume")
-async def resume_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
+async def resume_agent(agent_id: str, db: AsyncSession = Depends(get_db), _admin: bool = Depends(require_admin)):
     """Resume a paused agent."""
     result = await db.execute(select(Agent).where(Agent.agent_id == agent_id))
     agent = result.scalar_one_or_none()
@@ -188,7 +189,7 @@ async def resume_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/{agent_id}/reset")
-async def reset_agent_budget(agent_id: str, db: AsyncSession = Depends(get_db)):
+async def reset_agent_budget(agent_id: str, db: AsyncSession = Depends(get_db), _admin: bool = Depends(require_admin)):
     """Reset spend counter for a new billing cycle."""
     result = await db.execute(select(Agent).where(Agent.agent_id == agent_id))
     agent = result.scalar_one_or_none()

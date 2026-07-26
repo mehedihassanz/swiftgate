@@ -1,6 +1,7 @@
 import { Zap, Calculator, GitCompare, BarChart3, TrendingDown, Shield, Check, Code2, ArrowRight, DollarSign } from "lucide-react";
 
-const DASHBOARD_URL = "#";
+// Relative path — points to the web dashboard service
+const DASHBOARD_URL = "/app/";
 
 export default function App() {
   return (

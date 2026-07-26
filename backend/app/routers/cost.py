@@ -88,7 +88,7 @@ async def list_models(
     db: AsyncSession = Depends(get_db),
 ):
     """List all available models with pricing and capabilities."""
-    stmt = select(Model, ).where(Model.is_active == True)  # noqa: E712
+    stmt = select(Model).where(Model.is_active == True)  # noqa: E712
     if category:
         stmt = stmt.where(Model.category == category)
     stmt = stmt.order_by(Model.quality_score.desc())
@@ -153,4 +153,43 @@ async def pareto_frontier(
         "pareto_optimal": [m for m in result if m["pareto_optimal"]],
         "task_type": task_type,
         "all_models": result,
+    }
+
+
+@router.get("/models/{model_id}")
+async def get_model_detail(
+    model_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Get detailed info for a single model."""
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(
+        select(Model)
+        .options(selectinload(Model.provider))
+        .where(Model.model_id == model_id)
+    )
+    model = result.scalar_one_or_none()
+    if not model:
+        from fastapi import HTTPException
+        raise HTTPException(404, f"Model '{model_id}' not found")
+
+    return {
+        "model_id": model.model_id,
+        "display_name": model.display_name,
+        "provider": model.provider.name if model.provider else None,
+        "category": model.category,
+        "tokenizer": model.tokenizer,
+        "context_window": model.context_window,
+        "max_output": model.max_output,
+        "supports_tools": model.supports_tools,
+        "supports_vision": model.supports_vision,
+        "supports_json": model.supports_json,
+        "supports_streaming": getattr(model, "supports_streaming", True),
+        "quality_score": model.quality_score,
+        "speed_score": model.speed_score,
+        "pricing": {
+            "prompt_per_mtok": round(float(model.prompt_price) * 1_000_000, 4),
+            "completion_per_mtok": round(float(model.completion_price) * 1_000_000, 4),
+            "cached_per_mtok": round(float(model.cached_price) * 1_000_000, 4) if model.cached_price else None,
+        },
     }

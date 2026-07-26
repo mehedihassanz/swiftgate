@@ -7,3 +7,5 @@ dist/
 .env
 *.tsbuildinfo
 .pytest_cache/
+*.db
+test_swiftgate.db*

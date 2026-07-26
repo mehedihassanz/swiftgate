@@ -22,6 +22,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.auth import require_admin
 from app.services.pii_redaction import (
     PII_PATTERNS_INFO,
     detect_pii,
@@ -55,6 +56,7 @@ async def cache_stats(db: AsyncSession = Depends(get_db)):
 async def cache_invalidate(
     model_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(require_admin),
 ):
     """Invalidate cache entries. Optionally filter by model_id."""
     count = await invalidate_cache(db, model_id=model_id)
@@ -62,14 +64,21 @@ async def cache_invalidate(
 
 
 @router.delete("/cache/expired")
-async def cache_cleanup_expired(db: AsyncSession = Depends(get_db)):
+async def cache_cleanup_expired(
+    db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(require_admin),
+):
     """Remove all expired cache entries."""
     count = await cleanup_expired(db)
     return {"cleaned_up": count}
 
 
 @router.post("/cache/invalidate")
-async def cache_invalidate_body(body: CacheInvalidateRequest, db: AsyncSession = Depends(get_db)):
+async def cache_invalidate_body(
+    body: CacheInvalidateRequest,
+    db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(require_admin),
+):
     """Invalidate cache by pattern (body-based for SDK compatibility)."""
     count = await invalidate_cache(db, model_id=body.model_id, expired_only=body.expired_only)
     return {"invalidated": count, "model_id": body.model_id, "expired_only": body.expired_only}

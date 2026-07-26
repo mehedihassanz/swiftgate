@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import ApiKey, UsageRecord
+from app.auth import require_admin
 
 router = APIRouter(prefix="/v1/keys", tags=["api-keys"])
 
@@ -82,6 +83,7 @@ class KeyResponse(BaseModel):
 async def create_key(
     body: KeyCreate,
     db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(require_admin),
 ):
     """Create a new API key. The full key is returned ONLY in this response."""
     raw_key = _generate_api_key()
@@ -109,7 +111,10 @@ async def create_key(
 
 
 @router.get("")
-async def list_keys(db: AsyncSession = Depends(get_db)):
+async def list_keys(
+    db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(require_admin),
+):
     """List all API keys (without exposing the full key)."""
     result = await db.execute(select(ApiKey).order_by(ApiKey.created_at.desc()))
     keys = result.scalars().all()
@@ -136,7 +141,11 @@ async def list_keys(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{key_id}")
-async def get_key(key_id: int, db: AsyncSession = Depends(get_db)):
+async def get_key(
+    key_id: int,
+    db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(require_admin),
+):
     """Get detailed info for a specific key, including recent usage."""
     key = await db.get(ApiKey, key_id)
     if not key:
@@ -188,6 +197,7 @@ async def update_key(
     key_id: int,
     body: KeyUpdate,
     db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(require_admin),
 ):
     """Update a key's settings (budget, name, active status)."""
     key = await db.get(ApiKey, key_id)
@@ -203,7 +213,11 @@ async def update_key(
 
 
 @router.delete("/{key_id}")
-async def delete_key(key_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_key(
+    key_id: int,
+    db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(require_admin),
+):
     """Permanently delete a key. Consider PUT is_active=false instead."""
     key = await db.get(ApiKey, key_id)
     if not key:
@@ -214,7 +228,11 @@ async def delete_key(key_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/{key_id}/reset")
-async def reset_spend(key_id: int, db: AsyncSession = Depends(get_db)):
+async def reset_spend(
+    key_id: int,
+    db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(require_admin),
+):
     """Reset the spend counter (e.g., at the start of a new billing cycle)."""
     key = await db.get(ApiKey, key_id)
     if not key:

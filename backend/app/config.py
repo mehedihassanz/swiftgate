@@ -24,6 +24,12 @@ class Settings:
     HOST: str = os.environ.get("HOST", "0.0.0.0")
     PORT: int = int(os.environ.get("PORT", "8000"))
 
+    # Admin auth (required in production)
+    ADMIN_KEY: str = os.environ.get("ADMIN_KEY", "")
+
+    # CORS — comma-separated allowlist. Use "*" for development only.
+    CORS_ORIGINS: str = os.environ.get("CORS_ORIGINS", "*")
+
     # Provider API keys (BYOK from gateway operator)
     # These are the keys SwiftGate uses to call upstream providers.
     # Users can also bring their own keys (BYOK mode).

@@ -168,7 +168,8 @@ async def get_ml_stats():
 @router.post("/ml/train")
 async def train_ml_model(db: AsyncSession = Depends(get_db)):
     """Manually trigger ML model training from historical usage data."""
+    import asyncio
     from app.services.prediction_ml import predictor
     result = await predictor.train_from_db(db)
-    predictor.save()
+    await asyncio.to_thread(predictor.save)  # non-blocking save
     return result

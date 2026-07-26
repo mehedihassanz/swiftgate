@@ -30,20 +30,11 @@ from pydantic import BaseModel, Field
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-
 from app.database import get_db
 from app.models import ApiKey, Model, Provider, UsageRecord
+from app.auth import require_admin
 
 router = APIRouter(prefix="/admin", tags=["admin"])
-
-ADMIN_KEY = os.environ.get("ADMIN_KEY", "")
-
-
-def _check_admin(x_admin_key: str | None = Header(None, alias="X-Admin-Key")):
-    """Simple admin auth. If ADMIN_KEY is set, require matching header."""
-    if ADMIN_KEY and x_admin_key != ADMIN_KEY:
-        raise HTTPException(401, "Invalid or missing X-Admin-Key header")
-    return True
 
 
 # ─── Provider Schemas ──────────────────────────────────────────────────
@@ -111,7 +102,7 @@ class ModelUpdate(BaseModel):
 @router.get("/providers")
 async def list_providers(
     db: AsyncSession = Depends(get_db),
-    _admin: bool = Depends(_check_admin),
+    _admin: bool = Depends(require_admin),
 ):
     """List all providers."""
     result = await db.execute(select(Provider).order_by(Provider.priority))
@@ -126,7 +117,7 @@ async def list_providers(
 async def create_provider(
     body: ProviderCreate,
     db: AsyncSession = Depends(get_db),
-    _admin: bool = Depends(_check_admin),
+    _admin: bool = Depends(require_admin),
 ):
     """Add a new provider."""
     existing = await db.execute(select(Provider).where(Provider.name == body.name))
@@ -145,7 +136,7 @@ async def update_provider(
     provider_id: int,
     body: ProviderUpdate,
     db: AsyncSession = Depends(get_db),
-    _admin: bool = Depends(_check_admin),
+    _admin: bool = Depends(require_admin),
 ):
     """Update a provider."""
     provider = await db.get(Provider, provider_id)
@@ -164,7 +155,7 @@ async def update_provider(
 async def delete_provider(
     provider_id: int,
     db: AsyncSession = Depends(get_db),
-    _admin: bool = Depends(_check_admin),
+    _admin: bool = Depends(require_admin),
 ):
     """Delete a provider. Fails if models are attached."""
     provider = await db.get(Provider, provider_id)
@@ -189,7 +180,7 @@ async def delete_provider(
 @router.get("/models")
 async def list_models_admin(
     db: AsyncSession = Depends(get_db),
-    _admin: bool = Depends(_check_admin),
+    _admin: bool = Depends(require_admin),
 ):
     """List all models with full details including pricing."""
     result = await db.execute(
@@ -208,7 +199,7 @@ async def list_models_admin(
 async def create_model(
     body: ModelCreate,
     db: AsyncSession = Depends(get_db),
-    _admin: bool = Depends(_check_admin),
+    _admin: bool = Depends(require_admin),
 ):
     """Add a new model."""
     # Check model_id uniqueness
@@ -239,7 +230,7 @@ async def update_model(
     model_id: int,
     body: ModelUpdate,
     db: AsyncSession = Depends(get_db),
-    _admin: bool = Depends(_check_admin),
+    _admin: bool = Depends(require_admin),
 ):
     """Update a model."""
     model = await db.get(Model, model_id)
@@ -261,7 +252,7 @@ async def update_model(
 async def delete_model(
     model_id: int,
     db: AsyncSession = Depends(get_db),
-    _admin: bool = Depends(_check_admin),
+    _admin: bool = Depends(require_admin),
 ):
     """Delete a model."""
     model = await db.get(Model, model_id)
@@ -278,11 +269,11 @@ async def delete_model(
 @router.post("/seed")
 async def reseed(
     db: AsyncSession = Depends(get_db),
-    _admin: bool = Depends(_check_admin),
+    _admin: bool = Depends(require_admin),
 ):
-    """Re-seed the database with default providers and models."""
+    """Re-seed the database with default providers and models (forces price updates)."""
     from app.services.pricing import seed_database
-    result = await seed_database(db)
+    result = await seed_database(db, overwrite_prices=True)
     await db.commit()
     return result
 
@@ -290,7 +281,7 @@ async def reseed(
 @router.get("/stats")
 async def admin_stats(
     db: AsyncSession = Depends(get_db),
-    _admin: bool = Depends(_check_admin),
+    _admin: bool = Depends(require_admin),
 ):
     """Platform-wide admin statistics."""
     from sqlalchemy import func

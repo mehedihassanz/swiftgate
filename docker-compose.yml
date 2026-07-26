@@ -6,16 +6,25 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     environment:
-      - DATABASE_URL=sqlite+aiosqlite:///./swiftgate.db
+      - DATABASE_URL=sqlite+aiosqlite:///./data/swiftgate.db
+      - ENV=production
       - TOKEN_MARGIN=0.01
+      - ADMIN_KEY=${ADMIN_KEY:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
       # Set these to enable the gateway proxy
       # - OPENAI_API_KEY=sk-...
       # - ANTHROPIC_API_KEY=sk-ant-...
       # - DEEPINFRA_API_KEY=...
     volumes:
       - backend-data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
 
   web:
@@ -23,9 +32,10 @@ services:
       context: .
       dockerfile: web/Dockerfile
     ports:
-      - "3001:80"
+      - "${WEB_PORT:-3001}:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
 
   landing:
@@ -33,7 +43,7 @@ services:
       context: .
       dockerfile: landing/Dockerfile
     ports:
-      - "3002:80"
+      - "${LANDING_PORT:-3002}:80"
     restart: unless-stopped
 
 volumes:

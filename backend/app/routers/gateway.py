@@ -87,8 +87,13 @@ async def _authenticate(
 
 
 def _require_auth(api_key: ApiKey | None) -> ApiKey:
-    """Enforce authentication. In production, reject anonymous requests."""
-    if settings.ENV == "production" and not api_key:
+    """Enforce authentication.
+
+    Gateway requires an API key in all environments EXCEPT development/testing.
+    Set ENV=development to allow anonymous access (rate-limited to 10 RPM).
+    """
+    allow_anon = settings.ENV in ("development", "testing")
+    if not allow_anon and not api_key:
         raise HTTPException(
             401,
             "API key required. Create one at POST /v1/keys "
@@ -125,8 +130,11 @@ def _build_upstream_request(
         body = _convert_to_anthropic(request_body, model)
     elif provider.name == "google":
         api_key = _get_api_key_for_provider(provider)
-        url = f"{provider.base_url}/models/{model.model_id}:generateContent?key={api_key}"
-        headers = {"content-type": "application/json"}
+        url = f"{provider.base_url}/models/{model.model_id}:generateContent"
+        headers = {
+            "content-type": "application/json",
+            "x-goog-api-key": api_key,  # Header-based auth — keeps key out of URLs/logs
+        }
         body = _convert_to_gemini(request_body, model)
     else:
         # OpenAI-compatible (most providers)
@@ -542,7 +550,15 @@ async def _forward_request(
 
     start_time = time.time()
 
-    async with httpx.AsyncClient(timeout=120.0) as client:
+    # Use shared HTTP client for connection reuse (or fallback for tests)
+    owns_client = False
+    try:
+        client = request.app.state.http_client
+    except AttributeError:
+        client = httpx.AsyncClient(timeout=120.0)
+        owns_client = True
+
+    try:
         if req.stream:
             return await _handle_streaming(
                 client, db, api_key, model, provider,
@@ -559,6 +575,9 @@ async def _forward_request(
                 pii_token_map=pii_token_map,
                 cache_enabled=cache_enabled,
             )
+    finally:
+        if owns_client:
+            await client.aclose()
 
 
 async def _handle_non_streaming(
@@ -667,10 +686,13 @@ async def _handle_streaming(
     pii_token_map=None,
     cache_enabled: bool = False,
 ):
-    """Handle a streaming request with usage tracking."""
+    """Handle a streaming request with usage tracking and PII rehydration."""
+    from app.database import async_session
+
     usage_tracker = StreamingUsageTracker()
 
     async def stream_generator():
+        # Use a FRESH session — the request-scoped session may close before streaming finishes
         try:
             async with client.stream("POST", url, headers=headers, json=body) as response:
                 if response.status_code >= 400:
@@ -679,6 +701,9 @@ async def _handle_streaming(
                     return
 
                 async for line in response.aiter_lines():
+                    # PII rehydration: restore original values in streamed chunks
+                    if pii_token_map:
+                        line = pii_token_map.rehydrate(line)
                     if line.startswith("data: "):
                         chunk_data = line[6:]
                         usage_tracker.process_chunk(chunk_data)
@@ -689,17 +714,18 @@ async def _handle_streaming(
             yield f'data: {{"error": "{str(e)}"}}\n\n'
 
         finally:
-            # Record usage after stream completes
+            # Record usage with a fresh session (request session may be closed)
             latency_ms = int((time.time() - start_time) * 1000)
             streaming_usage = usage_tracker.get_usage()
 
             try:
-                await _record_usage(
-                    db, api_key, model, body, None, prediction,
-                    latency_ms, agent_id=agent_id,
-                    streaming_usage=streaming_usage,
-                )
-                await db.commit()
+                async with async_session() as stream_db:
+                    await _record_usage(
+                        stream_db, api_key, model, body, None, prediction,
+                        latency_ms, agent_id=agent_id,
+                        streaming_usage=streaming_usage,
+                    )
+                    await stream_db.commit()
             except Exception as e:
                 logger.error(f"Failed to record streaming usage: {e}")
 
