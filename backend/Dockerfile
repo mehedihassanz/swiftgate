@@ -2,14 +2,13 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-# Install dependencies first (layer caching)
-COPY backend/requirements.txt .
+# Context root is backend/ — use relative paths
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend source + migration config
-COPY backend/ .
-COPY backend/alembic.ini ./alembic.ini
-COPY backend/alembic ./alembic
+COPY . .
+COPY alembic.ini ./alembic.ini
 
 # Create data dir for SQLite (fallback when Postgres not configured)
 RUN mkdir -p /app/data
