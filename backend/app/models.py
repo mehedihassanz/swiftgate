@@ -190,7 +190,7 @@ class BudgetAlert(Base):
     __tablename__ = "budget_alerts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    api_key_id: Mapped[int] = mapped_column(ForeignKey("api_keys.id"), index=True)
+    api_key_id: Mapped[int | None] = mapped_column(ForeignKey("api_keys.id"), nullable=True, index=True)
     agent_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
     threshold_pct: Mapped[int] = mapped_column(Integer)  # 50, 80, 90, 100
     spend_cents: Mapped[int] = mapped_column(Integer)

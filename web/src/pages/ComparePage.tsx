@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { GitCompare, Loader2, Star } from "lucide-react";
+import { authFetch } from "../auth";
 
 interface ComparisonModel {
   model_id: string;
@@ -32,7 +33,7 @@ export default function ComparePage() {
   const compare = async () => {
     setLoading(true);
     try {
-      const resp = await fetch("/v1/compare", {
+      const resp = await authFetch("/v1/compare", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

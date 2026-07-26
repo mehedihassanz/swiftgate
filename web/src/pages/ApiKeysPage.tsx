@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Key, Plus, Trash2, Copy, Check, Loader2, DollarSign } from "lucide-react";
+import { authFetch } from "../auth";
 
 interface ApiKey {
   id: number;
@@ -25,7 +26,7 @@ export default function ApiKeysPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const resp = await fetch("/v1/keys");
+      const resp = await authFetch("/v1/keys");
       const data = await resp.json();
       setKeys(data.keys || []);
     } finally {
@@ -36,7 +37,7 @@ export default function ApiKeysPage() {
   useEffect(() => { load(); }, []);
 
   const create = async () => {
-    const resp = await fetch("/v1/keys", {
+    const resp = await authFetch("/v1/keys", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -56,7 +57,7 @@ export default function ApiKeysPage() {
 
   const del = async (id: number) => {
     if (!confirm("Delete this API key? This cannot be undone.")) return;
-    await fetch(`/v1/keys/${id}`, { method: "DELETE" });
+    await authFetch(`/v1/keys/${id}`, { method: "DELETE" });
     load();
   };
 

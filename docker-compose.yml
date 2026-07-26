@@ -1,10 +1,8 @@
-version: "3.9"
-
 services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379"
+      - "6379:6379"
     command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
     restart: unless-stopped
     healthcheck:
@@ -15,8 +13,8 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
@@ -25,6 +23,7 @@ services:
       - ENV=production
       - TOKEN_MARGIN=0.01
       - ADMIN_KEY=${ADMIN_KEY:-}
+      - JWT_SECRET=${JWT_SECRET:-swiftgate-dev-secret-change-in-production}
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
       # Set these to enable the gateway proxy
       # - OPENAI_API_KEY=sk-...
@@ -45,10 +44,12 @@ services:
 
   web:
     build:
-      context: .
-      dockerfile: web/Dockerfile
+      context: ./web
+      dockerfile: Dockerfile
     ports:
       - "${WEB_PORT:-3001}:80"
+    environment:
+      - BACKEND_URL=http://backend:8000
     depends_on:
       backend:
         condition: service_healthy
@@ -56,8 +57,8 @@ services:
 
   landing:
     build:
-      context: .
-      dockerfile: landing/Dockerfile
+      context: ./landing
+      dockerfile: Dockerfile
     ports:
       - "${LANDING_PORT:-3002}:80"
     restart: unless-stopped

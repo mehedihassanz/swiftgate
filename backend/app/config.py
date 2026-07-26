@@ -44,6 +44,14 @@ class Settings:
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRY_HOURS: int = int(os.environ.get("JWT_EXPIRY_HOURS", "168"))  # 7 days
 
+    # Production safety: refuse to start with insecure defaults
+    _DEFAULT_JWT_SECRET = "swiftgate-dev-secret-change-in-production"
+    if ENV == "production" and JWT_SECRET == _DEFAULT_JWT_SECRET:
+        raise RuntimeError(
+            "JWT_SECRET must be set to a secure random value in production. "
+            "Generate one with: openssl rand -hex 32"
+        )
+
     # CORS — comma-separated allowlist. Use "*" for development only.
     CORS_ORIGINS: str = os.environ.get("CORS_ORIGINS", "*")
 

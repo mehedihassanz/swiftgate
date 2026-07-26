@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Bot, Plus, OctagonX, Pause, Play, RefreshCw, Loader2, Activity } from "lucide-react";
+import { authFetch } from "../auth";
 
 interface Agent {
   id: number;
@@ -30,7 +31,7 @@ export default function AgentsPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const resp = await fetch("/v1/agents");
+      const resp = await authFetch("/v1/agents");
       const data = await resp.json();
       setAgents(data.agents || []);
     } finally {
@@ -41,7 +42,7 @@ export default function AgentsPage() {
   useEffect(() => { load(); }, []);
 
   const create = async () => {
-    await fetch("/v1/agents", {
+    await authFetch("/v1/agents", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -56,7 +57,7 @@ export default function AgentsPage() {
   };
 
   const action = async (agentId: string, actionType: string) => {
-    await fetch(`/v1/agents/${agentId}/${actionType}`, { method: "POST" });
+    await authFetch(`/v1/agents/${agentId}/${actionType}`, { method: "POST" });
     load();
   };
 

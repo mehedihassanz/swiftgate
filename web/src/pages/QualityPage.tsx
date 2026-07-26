@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Trophy, Loader2, Star, MessageSquare, ThumbsUp, ThumbsDown } from "lucide-react";
+import { authFetch } from "../auth";
 
 interface QualityEntry {
   model_id: string;
@@ -88,7 +89,7 @@ function LeaderboardTab() {
   const load = async () => {
     setLoading(true);
     try {
-      const resp = await fetch(`/v1/quality/leaderboard?task_type=${taskType}`);
+      const resp = await authFetch(`/v1/quality/leaderboard?task_type=${taskType}`);
       const data = await resp.json();
       setEntries(data.leaderboard || []);
     } finally {
@@ -193,7 +194,7 @@ function PiiTab() {
   const [testing, setTesting] = useState(false);
 
   useEffect(() => {
-    fetch("/v1/pii/patterns")
+    authFetch("/v1/pii/patterns")
       .then((r) => r.json())
       .then((d) => setPatterns(d.patterns || []));
   }, []);
@@ -203,7 +204,7 @@ function PiiTab() {
     setTesting(true);
     try {
       // Detect
-      const dResp = await fetch("/v1/pii/detect", {
+      const dResp = await authFetch("/v1/pii/detect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: testText }),
@@ -211,7 +212,7 @@ function PiiTab() {
       setDetectResult(await dResp.json());
 
       // Redact
-      const rResp = await fetch("/v1/pii/redact", {
+      const rResp = await authFetch("/v1/pii/redact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: [{ role: "user", content: testText }] }),

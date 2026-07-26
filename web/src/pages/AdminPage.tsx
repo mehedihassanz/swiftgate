@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import {
   Settings, Plus, Trash2, Edit3, X, Save, Server, Cpu, Loader2, RefreshCw,
 } from "lucide-react";
+import { authFetch } from "../auth";
 
 interface Provider {
   id: number;
@@ -50,8 +51,8 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const [m, p] = await Promise.all([
-        fetch("/admin/models").then((r) => r.json()),
-        fetch("/admin/providers").then((r) => r.json()),
+        authFetch("/admin/models").then((r) => r.json()),
+        authFetch("/admin/providers").then((r) => r.json()),
       ]);
       setModels(m.models || []);
       setProviders(p.providers || []);
@@ -64,13 +65,13 @@ export default function AdminPage() {
 
   const deleteModel = async (id: number) => {
     if (!confirm("Delete this model?")) return;
-    await fetch(`/admin/models/${id}`, { method: "DELETE" });
+    await authFetch(`/admin/models/${id}`, { method: "DELETE" });
     loadData();
   };
 
   const deleteProvider = async (id: number) => {
     if (!confirm("Delete this provider? Models must be removed first.")) return;
-    const resp = await fetch(`/admin/providers/${id}`, { method: "DELETE" });
+    const resp = await authFetch(`/admin/providers/${id}`, { method: "DELETE" });
     if (!resp.ok) {
       const err = await resp.json();
       alert(err.detail || "Failed to delete");
@@ -81,7 +82,7 @@ export default function AdminPage() {
 
   const reseed = async () => {
     if (!confirm("Re-seed database with default providers and models?")) return;
-    await fetch("/admin/seed", { method: "POST" });
+    await authFetch("/admin/seed", { method: "POST" });
     loadData();
   };
 
@@ -288,7 +289,7 @@ function ModelForm({ model, providers, onClose, onSaved }: {
       const body = { ...form, cached_price: form.cached_price || null };
       const url = model ? `/admin/models/${model.id}` : "/admin/models";
       const method = model ? "PUT" : "POST";
-      const resp = await fetch(url, {
+      const resp = await authFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -377,7 +378,7 @@ function ProviderForm({ provider, onClose, onSaved }: {
     try {
       const url = provider ? `/admin/providers/${provider.id}` : "/admin/providers";
       const method = provider ? "PUT" : "POST";
-      const resp = await fetch(url, {
+      const resp = await authFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

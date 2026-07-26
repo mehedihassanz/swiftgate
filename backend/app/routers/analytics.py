@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth import require_admin
 from app.database import get_db
 from app.models import UsageRecord
 
@@ -18,6 +19,7 @@ async def get_usage(
     days: int = Query(30, ge=1, le=365),
     agent_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
+    _admin: str = Depends(require_admin),
 ):
     """Get usage analytics for a time period."""
     since = datetime.now(timezone.utc) - timedelta(days=days)
@@ -93,6 +95,7 @@ async def get_usage(
 async def get_daily_usage(
     days: int = Query(30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _admin: str = Depends(require_admin),
 ):
     """Get daily cost breakdown for charts."""
     since = datetime.now(timezone.utc) - timedelta(days=days)
@@ -118,7 +121,10 @@ async def get_daily_usage(
 
 
 @router.get("/stats")
-async def get_platform_stats(db: AsyncSession = Depends(get_db)):
+async def get_platform_stats(
+    db: AsyncSession = Depends(get_db),
+    _admin: str = Depends(require_admin),
+):
     """Platform-wide statistics."""
     total_result = await db.execute(
         select(
@@ -157,7 +163,7 @@ async def get_platform_stats(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/ml/stats")
-async def get_ml_stats():
+async def get_ml_stats(_admin: str = Depends(require_admin)):
     """Get ML prediction model statistics."""
     from app.services.prediction_ml import predictor
     stats = predictor.get_stats()
@@ -166,7 +172,10 @@ async def get_ml_stats():
 
 
 @router.post("/ml/train")
-async def train_ml_model(db: AsyncSession = Depends(get_db)):
+async def train_ml_model(
+    db: AsyncSession = Depends(get_db),
+    _admin: str = Depends(require_admin),
+):
     """Manually trigger ML model training from historical usage data."""
     import asyncio
     from app.services.prediction_ml import predictor

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Calculator, Loader2, TrendingDown, CheckCircle, AlertCircle } from "lucide-react";
+import { authFetch } from "../auth";
 
 interface Prediction {
   model: string;
@@ -53,7 +54,7 @@ export default function PredictPage() {
 
   // Load models on mount
   useState(() => {
-    fetch("/v1/models")
+    authFetch("/v1/models")
       .then((r) => r.json())
       .then((d) => setModels(d.models || []))
       .catch(() => {});
@@ -64,7 +65,7 @@ export default function PredictPage() {
     setError("");
     setPrediction(null);
     try {
-      const resp = await fetch("/v1/predict", {
+      const resp = await authFetch("/v1/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

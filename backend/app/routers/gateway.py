@@ -363,18 +363,23 @@ async def _create_budget_alert(
 ) -> None:
     """Create a budget alert if one doesn't already exist for this threshold."""
     from app.models import BudgetAlert
-    # Only create if one doesn't exist for this key+threshold in the current billing cycle
+    if not api_key_id and not agent_id:
+        return  # nothing to alert on
+
+    # Build dedup query — check if already alerted for this threshold
+    conditions = [BudgetAlert.threshold_pct == threshold_pct, BudgetAlert.acknowledged == False]  # noqa: E712
+    if api_key_id:
+        conditions.append(BudgetAlert.api_key_id == api_key_id)
+    if agent_id:
+        conditions.append(BudgetAlert.agent_id == agent_id)
+
     result = await db.execute(
-        select(BudgetAlert).where(
-            BudgetAlert.api_key_id == api_key_id if api_key_id else False,
-            BudgetAlert.threshold_pct == threshold_pct,
-            BudgetAlert.acknowledged == False,  # noqa: E712
-        ).limit(1)
+        select(BudgetAlert).where(*conditions).limit(1)
     )
     if result.scalar_one_or_none():
         return  # already alerted
     alert = BudgetAlert(
-        api_key_id=api_key_id or 0,
+        api_key_id=api_key_id,
         agent_id=agent_id,
         threshold_pct=threshold_pct,
         spend_cents=spend_cents,

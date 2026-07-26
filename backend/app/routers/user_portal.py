@@ -229,7 +229,7 @@ async def my_usage(user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db
     result = await db.execute(
         select(
             func.count(UsageRecord.id),
-            func.sum(UsageRecord.cost_cents),
+            func.sum(UsageRecord.total_cost_cents),
             func.sum(UsageRecord.prompt_tokens),
             func.sum(UsageRecord.completion_tokens),
         ).join(ApiKey, UsageRecord.api_key_id == ApiKey.id).where(
@@ -273,12 +273,12 @@ async def my_recent_usage(
         "records": [
             {
                 "id": r.id,
-                "model_id": r.model_id,
-                "provider_name": r.provider_name,
+                "model_id": r.model_served,
+                "provider_name": r.provider,
                 "prompt_tokens": r.prompt_tokens,
                 "completion_tokens": r.completion_tokens,
-                "cost_cents": r.cost_cents,
-                "cost_usd": round(r.cost_cents / 100, 6) if r.cost_cents else 0,
+                "cost_cents": r.total_cost_cents,
+                "cost_usd": round(r.total_cost_cents / 100, 6) if r.total_cost_cents else 0,
                 "latency_ms": r.latency_ms,
                 "created_at": r.created_at.isoformat() if r.created_at else "",
             }

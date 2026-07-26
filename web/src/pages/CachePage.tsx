@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Database, Trash2, Loader2, TrendingDown, Zap, Clock } from "lucide-react";
+import { authFetch } from "../auth";
 
 interface CacheStats {
   total_entries: number;
@@ -20,7 +21,7 @@ export default function CachePage() {
   const load = async () => {
     setLoading(true);
     try {
-      const resp = await fetch("/v1/cache/stats");
+      const resp = await authFetch("/v1/cache/stats");
       const data = await resp.json();
       setStats(data);
     } finally {
@@ -42,7 +43,7 @@ export default function CachePage() {
         : modelFilter
         ? `/v1/cache?model_id=${encodeURIComponent(modelFilter)}`
         : "/v1/cache";
-      await fetch(url, { method: "DELETE" });
+      await authFetch(url, { method: "DELETE" });
       await load();
     } finally {
       setInvalidating(false);

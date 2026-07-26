@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Zap, TrendingDown, Clock, DollarSign, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { authFetch } from "../auth";
 
 interface Stats {
   total_requests: number;
@@ -26,8 +27,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/v1/stats").then((r) => r.json()),
-      fetch("/v1/models").then((r) => r.json()),
+      authFetch("/v1/stats").then((r) => r.json()),
+      authFetch("/v1/models").then((r) => r.json()),
     ])
       .then(([s, m]) => {
         setStats(s);

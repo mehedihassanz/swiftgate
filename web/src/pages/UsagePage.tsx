@@ -12,6 +12,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { authFetch } from "../auth";
 
 const COLORS = ["#33a8ff", "#1a87f5", "#156de1", "#1857b6", "#59c3ff", "#8ed9ff", "#bce7ff"];
 
@@ -40,7 +41,7 @@ export default function UsagePage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/v1/usage?days=${days}`)
+    authFetch(`/v1/usage?days=${days}`)
       .then((r) => r.json())
       .then(setData)
       .finally(() => setLoading(false));
