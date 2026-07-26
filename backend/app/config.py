@@ -21,15 +21,17 @@ def _get_bool(key: str, default: bool = False) -> bool:
 
 @dataclass
 class Settings:
-    # Database
+    # Database — Railway injects DATABASE_URL when Postgres plugin is attached.
+    # Without it, fall back to SQLite (ephemeral on Railway — data lost on redeploy).
     DATABASE_URL: str = os.environ.get(
         "DATABASE_URL", "sqlite+aiosqlite:///./swiftgate.db"
     )
 
-    # Redis (for real-time spend tracking + budget enforcement)
-    REDIS_URL: str = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    # Redis — Railway injects REDIS_URL when Redis plugin is attached.
+    # Without it, rate limiter falls back to in-memory.
+    REDIS_URL: str = os.environ.get("REDIS_URL", "")
 
-    # Core
+    # Core — Railway injects PORT. Default to 8000 for local dev.
     ENV: str = os.environ.get("ENV", "development")
     HOST: str = os.environ.get("HOST", "0.0.0.0")
     PORT: int = int(os.environ.get("PORT", "8000"))

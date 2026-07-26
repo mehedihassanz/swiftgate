@@ -2,31 +2,27 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-# Copy only backend requirements first (for layer caching)
+# Install dependencies first (layer caching)
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend source code only
+# Copy backend source + migration config
 COPY backend/ .
-
-# Create data directory for SQLite
-RUN mkdir -p /app/data && \
-    useradd -m -u 1000 swiftgate && \
-    chown -R swiftgate:swiftgate /app
-
-USER swiftgate
-
-# Copy alembic migration config
-COPY backend/alembic.ini .
+COPY backend/alembic.ini ./alembic.ini
 COPY backend/alembic ./alembic
 
-ENV DATABASE_URL=sqlite+aiosqlite:///./data/swiftgate.db
+# Create data dir for SQLite (fallback when Postgres not configured)
+RUN mkdir -p /app/data
+
+# Railway injects PORT env var — use it, default to 8000 for local dev
 ENV HOST=0.0.0.0
 ENV PORT=8000
+ENV DATABASE_URL=sqlite+aiosqlite:///./data/swiftgate.db
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=15s \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=20s \
+    CMD python -c "import os, urllib.request; urllib.request.urlopen(f'http://localhost:{os.environ.get(\"PORT\", \"8000\")}/health')" || exit 1
 
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# Run migrations then start server (Railway overrides PORT)
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
