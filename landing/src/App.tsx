@@ -2,7 +2,7 @@ import { Zap, Calculator, GitCompare, BarChart3, TrendingDown, Shield, Check, Co
 
 // Links to the web service (different Railway service)
 const PORTAL_URL = "https://swiftgate.ai/portal/signup";
-const DASHBOARD_URL = "https://swiftgate.ai/login";
+const DASHBOARD_URL = "https://swiftgate.ai/";
 
 export default function App() {
   return (

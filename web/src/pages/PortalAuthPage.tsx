@@ -35,7 +35,7 @@ export default function PortalAuthPage({ mode }: { mode: "login" | "signup" }) {
 
       if (resp.ok) {
         login(data.access_token, data.user);
-        navigate("/portal");
+        navigate("/");
       } else {
         setError(data.detail || "Something went wrong");
       }

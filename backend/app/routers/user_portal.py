@@ -110,7 +110,13 @@ async def register(
     token = create_access_token(user.id, user.email)
     return TokenResponse(
         access_token=token,
-        user={"id": user.id, "email": user.email, "name": user.name, "is_admin": user.email.lower() in settings.admin_emails},
+        user={
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "is_admin": user.email.lower() in settings.admin_emails,
+            "credits_usd": round(user.credits_cents / 10000, 2),
+        },
     )
 
 
@@ -126,7 +132,13 @@ async def login(
     token = create_access_token(user.id, user.email)
     return TokenResponse(
         access_token=token,
-        user={"id": user.id, "email": user.email, "name": user.name, "is_admin": user.email.lower() in settings.admin_emails},
+        user={
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "is_admin": user.email.lower() in settings.admin_emails,
+            "credits_usd": round(user.credits_cents / 10000, 2),
+        },
     )
 
 
