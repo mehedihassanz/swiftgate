@@ -47,6 +47,8 @@ class TokenResponse(BaseModel):
 
 class CreateKeyRequest(BaseModel):
     name: str = Field(default="default", max_length=200)
+    monthly_budget_cents: int | None = Field(None, description="Max spend per month in microcents")
+    per_request_limit_cents: int | None = Field(None, description="Max cost per request in microcents")
 
 
 class ApiKeyResponse(BaseModel):
@@ -57,6 +59,8 @@ class ApiKeyResponse(BaseModel):
     created_at: str
     total_spend_cents: int
     total_requests: int
+    monthly_budget_cents: int | None = None
+    per_request_limit_cents: int | None = None
     full_key: str | None = None  # only set on creation
 
 
@@ -167,6 +171,8 @@ async def list_my_keys(user: CurrentUser, db: Annotated[AsyncSession, Depends(ge
             created_at=k.created_at.isoformat() if k.created_at else "",
             total_spend_cents=k.total_spend_cents,
             total_requests=k.total_requests,
+            monthly_budget_cents=k.monthly_budget_cents,
+            per_request_limit_cents=k.per_request_limit_cents,
         )
         for k in keys
     ]
@@ -186,7 +192,8 @@ async def create_my_key(
         name=req.name,
         user_id=user.id,
         user_email=user.email,
-        monthly_budget_cents=None,
+        monthly_budget_cents=req.monthly_budget_cents,
+        per_request_limit_cents=req.per_request_limit_cents,
     )
     db.add(new_key)
     await db.commit()
@@ -218,6 +225,73 @@ async def delete_my_key(
         raise HTTPException(status_code=404, detail="Key not found")
     await db.delete(key)
     await db.commit()
+
+
+class KeyUpdateRequest(BaseModel):
+    name: str | None = None
+    monthly_budget_cents: int | None = None
+    per_request_limit_cents: int | None = None
+    is_active: bool | None = None
+
+
+@user_router.put("/keys/{key_id}")
+async def update_my_key(
+    key_id: int,
+    req: KeyUpdateRequest,
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Update key settings (name, budget limits, active status)."""
+    result = await db.execute(
+        select(ApiKey).where(ApiKey.id == key_id, ApiKey.user_id == user.id)
+    )
+    key = result.scalar_one_or_none()
+    if not key:
+        raise HTTPException(status_code=404, detail="Key not found")
+
+    for field, val in req.model_dump(exclude_unset=True).items():
+        setattr(key, field, val)
+
+    await db.commit()
+    return {"updated": True, "id": key_id}
+
+
+# ─── User settings (/user/settings) ─────────────────────────────────
+
+
+@user_router.get("/settings")
+async def get_settings(user: CurrentUser):
+    """Get user account settings."""
+    return {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "is_admin": user.email.lower() in settings.admin_emails,
+        "credits_cents": user.credits_cents,
+        "credits_usd": round(user.credits_cents / 10000, 2),
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+    }
+
+
+class UpdateProfileRequest(BaseModel):
+    name: str | None = Field(None, max_length=200)
+
+
+@user_router.put("/settings")
+async def update_settings(
+    req: UpdateProfileRequest,
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Update user profile."""
+    if req.name is not None:
+        user.name = req.name
+    await db.commit()
+    return {
+        "updated": True,
+        "id": user.id,
+        "name": user.name,
+    }
 
 
 # ─── User usage (/user/usage) ────────────────────────────────────────

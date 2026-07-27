@@ -1,29 +1,56 @@
-import { Zap, Gauge, BarChart3, Calculator, GitCompare, Settings, Key, Bot, Database, Trophy, LogOut } from "lucide-react";
+import {
+  Zap, Gauge, Key, Activity, Cpu, Settings, Bot,
+  Calculator, GitCompare, Database, Trophy, LogOut, ChevronRight,
+} from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useUserAuth } from "../userAuth";
 
 const cls = (...args: (string | false | undefined)[]) => args.filter(Boolean).join(" ");
 
-const NAV = [
-  { to: "/", label: "Dashboard", icon: Gauge },
-  { to: "/predict", label: "Cost Predictor", icon: Calculator },
-  { to: "/compare", label: "Compare Models", icon: GitCompare },
-  { to: "/quality", label: "Quality & PII", icon: Trophy },
-  { to: "/cache", label: "Cache", icon: Database },
-  { to: "/usage", label: "Usage Analytics", icon: BarChart3 },
-  { to: "/keys", label: "API Keys", icon: Key },
-  { to: "/agents", label: "Agents", icon: Bot },
-  { to: "/admin", label: "Admin Panel", icon: Settings, adminOnly: true },
+const SECTIONS = [
+  {
+    title: "Overview",
+    items: [
+      { to: "/", label: "Dashboard", icon: Gauge },
+      { to: "/activity", label: "Activity", icon: Activity },
+    ],
+  },
+  {
+    title: "Build",
+    items: [
+      { to: "/models", label: "Models", icon: Cpu },
+      { to: "/predict", label: "Cost Predictor", icon: Calculator },
+      { to: "/compare", label: "Compare", icon: GitCompare },
+    ],
+  },
+  {
+    title: "Manage",
+    items: [
+      { to: "/keys", label: "API Keys", icon: Key },
+      { to: "/agents", label: "Agents", icon: Bot },
+      { to: "/settings", label: "Settings", icon: Settings },
+    ],
+  },
+  {
+    title: "Admin",
+    adminOnly: true,
+    items: [
+      { to: "/quality", label: "Quality & PII", icon: Trophy },
+      { to: "/cache", label: "Cache", icon: Database },
+      { to: "/usage", label: "Usage Analytics", icon: Activity },
+      { to: "/admin", label: "Admin Panel", icon: Settings },
+    ],
+  },
 ];
 
 export default function Sidebar() {
   const { user, logout } = useUserAuth();
   const navigate = useNavigate();
-  const visibleNav = NAV.filter((item) => !item.adminOnly || user?.is_admin);
 
   return (
     <aside className="flex w-60 flex-col border-r border-ink-200 bg-white">
-      <div className="flex items-center gap-2 px-5 py-5">
+      {/* Logo */}
+      <NavLink to="/" className="flex items-center gap-2 px-5 py-5">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700">
           <Zap className="h-5 w-5 text-white" />
         </div>
@@ -33,36 +60,58 @@ export default function Sidebar() {
             ADMIN
           </span>
         )}
-      </div>
+      </NavLink>
 
-      <nav className="flex-1 space-y-1 px-3 py-2">
-        {visibleNav.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === "/"}
-            className={({ isActive }) =>
-              cls(
-                "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition",
-                isActive
-                  ? "bg-brand-50 text-brand-700"
-                  : "text-ink-600 hover:bg-ink-50 hover:text-ink-900"
-              )
-            }
-          >
-            <item.icon className="h-4 w-4" />
-            {item.label}
-          </NavLink>
+      {/* Nav sections */}
+      <nav className="flex-1 overflow-y-auto px-3 py-2">
+        {SECTIONS.filter((s) => !s.adminOnly || user?.is_admin).map((section) => (
+          <div key={section.title} className="mb-4">
+            <div className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
+              {section.title}
+            </div>
+            <div className="space-y-0.5">
+              {section.items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.to === "/"}
+                  className={({ isActive }) =>
+                    cls(
+                      "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition",
+                      isActive
+                        ? "bg-brand-50 text-brand-700"
+                        : "text-ink-600 hover:bg-ink-50 hover:text-ink-900"
+                    )
+                  }
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 
+      {/* Credits pill */}
+      <div className="px-3 pb-2">
+        <NavLink to="/settings" className="block rounded-lg bg-ink-50 px-3 py-2.5 hover:bg-ink-100">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-ink-500">Credits</span>
+            <ChevronRight className="h-3 w-3 text-ink-400" />
+          </div>
+          <div className="mt-0.5 text-lg font-bold text-ink-900">
+            ${((user?.credits_usd ?? 0)).toFixed(2)}
+          </div>
+        </NavLink>
+      </div>
+
+      {/* User + logout */}
       <div className="border-t border-ink-200 p-3">
-        <div className="mb-2 truncate px-3 text-xs text-ink-500">
-          {user?.email}
-        </div>
+        <div className="mb-2 truncate px-3 text-xs text-ink-500">{user?.email}</div>
         <button
           onClick={() => { logout(); navigate("/portal/login"); }}
-          className="mb-2 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-ink-600 transition hover:bg-red-50 hover:text-red-600"
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-ink-600 transition hover:bg-red-50 hover:text-red-600"
         >
           <LogOut className="h-4 w-4" />
           Logout

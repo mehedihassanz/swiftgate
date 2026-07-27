@@ -11,11 +11,14 @@ import CachePage from "./pages/CachePage";
 import QualityPage from "./pages/QualityPage";
 import PortalAuthPage from "./pages/PortalAuthPage";
 import PortalDashboardPage from "./pages/PortalDashboardPage";
+import SettingsPage from "./pages/SettingsPage";
+import ModelsBrowsePage from "./pages/ModelsBrowsePage";
+import ActivityPage from "./pages/ActivityPage";
 import { UserAuthProvider, useUserAuth } from "./userAuth";
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user } = useUserAuth();
-  if (!user?.is_admin) return <Navigate to="/portal" replace />;
+  if (!user?.is_admin) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
@@ -28,22 +31,22 @@ function PortalLayout() {
       <Sidebar />
       <main className="flex-1 overflow-auto p-6">
         <Routes>
+          {/* User pages */}
           <Route path="/" element={<DashboardPage />} />
+          <Route path="/activity" element={<ActivityPage />} />
+          <Route path="/models" element={<ModelsBrowsePage />} />
           <Route path="/predict" element={<PredictPage />} />
           <Route path="/compare" element={<ComparePage />} />
-          <Route path="/quality" element={<QualityPage />} />
-          <Route path="/cache" element={<CachePage />} />
-          <Route path="/usage" element={<UsagePage />} />
           <Route path="/keys" element={<ApiKeysPage />} />
           <Route path="/agents" element={<AgentsPage />} />
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <AdminPage />
-              </AdminRoute>
-            }
-          />
+          <Route path="/settings" element={<SettingsPage />} />
+
+          {/* Admin-only pages */}
+          <Route path="/quality" element={<AdminRoute><QualityPage /></AdminRoute>} />
+          <Route path="/cache" element={<AdminRoute><CachePage /></AdminRoute>} />
+          <Route path="/usage" element={<AdminRoute><UsagePage /></AdminRoute>} />
+          <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
@@ -56,12 +59,12 @@ export default function App() {
     <UserAuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* User portal — the ONLY login entry point */}
+          {/* Auth pages (no sidebar) */}
           <Route path="/portal" element={<PortalDashboardPage />} />
           <Route path="/portal/login" element={<PortalAuthPage mode="login" />} />
           <Route path="/portal/signup" element={<PortalAuthPage mode="signup" />} />
 
-          {/* Admin dashboard (same auth, admin-only routes gated) */}
+          {/* Sidebar layout (all authenticated pages) */}
           <Route path="/*" element={<PortalLayout />} />
         </Routes>
       </BrowserRouter>
