@@ -27,8 +27,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      authFetch("/v1/stats").then((r) => r.json()),
-      authFetch("/v1/models").then((r) => r.json()),
+      authFetch("/v1/stats").then((r: any) => r.json()),
+      authFetch("/v1/models").then((r: any) => r.json()),
     ])
       .then(([s, m]) => {
         setStats(s);

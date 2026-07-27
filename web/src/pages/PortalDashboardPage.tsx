@@ -267,11 +267,13 @@ print(response.choices[0].message.content)`}</code></pre>
           </div>
         </div>
 
-        <div className="mt-6 text-center">
-          <Link to="/login" className="text-xs text-ink-400 hover:text-ink-600">
-            Admin dashboard →
-          </Link>
-        </div>
+        {user?.is_admin && (
+          <div className="mt-6 text-center">
+            <Link to="/" className="text-xs text-ink-400 hover:text-ink-600">
+              Admin dashboard →
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

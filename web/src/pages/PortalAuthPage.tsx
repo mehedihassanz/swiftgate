@@ -24,7 +24,8 @@ export default function PortalAuthPage({ mode }: { mode: "login" | "signup" }) {
         ? { email, password, name: name || undefined }
         : { email, password };
 
-      const resp = await fetch(`/auth/${mode}`, {
+      const endpoint = isSignup ? "/auth/register" : "/auth/login";
+      const resp = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -155,12 +156,6 @@ export default function PortalAuthPage({ mode }: { mode: "login" | "signup" }) {
               </>
             )}
           </div>
-        </div>
-
-        <div className="mt-4 text-center">
-          <Link to="/login" className="text-xs text-ink-400 hover:text-ink-600">
-            Admin login →
-          </Link>
         </div>
       </div>
     </div>

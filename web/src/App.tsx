@@ -9,18 +9,19 @@ import ApiKeysPage from "./pages/ApiKeysPage";
 import AgentsPage from "./pages/AgentsPage";
 import CachePage from "./pages/CachePage";
 import QualityPage from "./pages/QualityPage";
-import LoginPage from "./pages/LoginPage";
 import PortalAuthPage from "./pages/PortalAuthPage";
 import PortalDashboardPage from "./pages/PortalDashboardPage";
-import { AuthProvider, useAuth } from "./auth";
-import { UserAuthProvider } from "./userAuth";
+import { UserAuthProvider, useUserAuth } from "./userAuth";
 
-function ProtectedRoutes() {
-  const { isAuthenticated } = useAuth();
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useUserAuth();
+  if (!user?.is_admin) return <Navigate to="/portal" replace />;
+  return <>{children}</>;
+}
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+function PortalLayout() {
+  const { isAuthenticated } = useUserAuth();
+  if (!isAuthenticated) return <Navigate to="/portal/login" replace />;
 
   return (
     <div className="flex min-h-screen bg-ink-50">
@@ -30,12 +31,19 @@ function ProtectedRoutes() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/predict" element={<PredictPage />} />
           <Route path="/compare" element={<ComparePage />} />
+          <Route path="/quality" element={<QualityPage />} />
+          <Route path="/cache" element={<CachePage />} />
           <Route path="/usage" element={<UsagePage />} />
           <Route path="/keys" element={<ApiKeysPage />} />
           <Route path="/agents" element={<AgentsPage />} />
-          <Route path="/quality" element={<QualityPage />} />
-          <Route path="/cache" element={<CachePage />} />
-          <Route path="/admin" element={<AdminPage />} />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
@@ -45,21 +53,18 @@ function ProtectedRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <UserAuthProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* User portal (OpenRouter-style) */}
-            <Route path="/portal" element={<PortalDashboardPage />} />
-            <Route path="/portal/login" element={<PortalAuthPage mode="login" />} />
-            <Route path="/portal/signup" element={<PortalAuthPage mode="signup" />} />
+    <UserAuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* User portal — the ONLY login entry point */}
+          <Route path="/portal" element={<PortalDashboardPage />} />
+          <Route path="/portal/login" element={<PortalAuthPage mode="login" />} />
+          <Route path="/portal/signup" element={<PortalAuthPage mode="signup" />} />
 
-            {/* Admin dashboard */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/*" element={<ProtectedRoutes />} />
-          </Routes>
-        </BrowserRouter>
-      </UserAuthProvider>
-    </AuthProvider>
+          {/* Admin dashboard (same auth, admin-only routes gated) */}
+          <Route path="/*" element={<PortalLayout />} />
+        </Routes>
+      </BrowserRouter>
+    </UserAuthProvider>
   );
 }

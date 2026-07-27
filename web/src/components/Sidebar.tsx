@@ -1,6 +1,6 @@
 import { Zap, Gauge, BarChart3, Calculator, GitCompare, Settings, Key, Bot, Database, Trophy, LogOut } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../auth";
+import { useUserAuth } from "../userAuth";
 
 const cls = (...args: (string | false | undefined)[]) => args.filter(Boolean).join(" ");
 
@@ -13,12 +13,14 @@ const NAV = [
   { to: "/usage", label: "Usage Analytics", icon: BarChart3 },
   { to: "/keys", label: "API Keys", icon: Key },
   { to: "/agents", label: "Agents", icon: Bot },
-  { to: "/admin", label: "Admin Panel", icon: Settings },
+  { to: "/admin", label: "Admin Panel", icon: Settings, adminOnly: true },
 ];
 
 export default function Sidebar() {
-  const { logout } = useAuth();
+  const { user, logout } = useUserAuth();
   const navigate = useNavigate();
+  const visibleNav = NAV.filter((item) => !item.adminOnly || user?.is_admin);
+
   return (
     <aside className="flex w-60 flex-col border-r border-ink-200 bg-white">
       <div className="flex items-center gap-2 px-5 py-5">
@@ -26,10 +28,15 @@ export default function Sidebar() {
           <Zap className="h-5 w-5 text-white" />
         </div>
         <span className="text-base font-semibold tracking-tight text-ink-900">SwiftGate</span>
+        {user?.is_admin && (
+          <span className="ml-auto rounded bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700">
+            ADMIN
+          </span>
+        )}
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-2">
-        {NAV.map((item) => (
+        {visibleNav.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -50,17 +57,16 @@ export default function Sidebar() {
       </nav>
 
       <div className="border-t border-ink-200 p-3">
+        <div className="mb-2 truncate px-3 text-xs text-ink-500">
+          {user?.email}
+        </div>
         <button
-          onClick={() => { logout(); navigate("/login"); }}
+          onClick={() => { logout(); navigate("/portal/login"); }}
           className="mb-2 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-ink-600 transition hover:bg-red-50 hover:text-red-600"
         >
           <LogOut className="h-4 w-4" />
           Logout
         </button>
-        <div className="rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500">
-          <div className="font-semibold text-ink-700">⚡ Cost Intelligence</div>
-          <div className="mt-0.5">5 data flywheels · 43 endpoints</div>
-        </div>
       </div>
     </aside>
   );

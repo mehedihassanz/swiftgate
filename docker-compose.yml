@@ -23,6 +23,7 @@ services:
       - ENV=development
       - TOKEN_MARGIN=0.01
       - ADMIN_KEY=${ADMIN_KEY:-}
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-}
       - JWT_SECRET=${JWT_SECRET:-swiftgate-dev-secret-change-in-production}
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
       # Set these to enable the gateway proxy

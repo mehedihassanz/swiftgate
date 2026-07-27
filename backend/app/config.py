@@ -36,8 +36,13 @@ class Settings:
     HOST: str = os.environ.get("HOST", "0.0.0.0")
     PORT: int = int(os.environ.get("PORT", "8000"))
 
-    # Admin auth (required in production)
+    # Admin auth — legacy X-Admin-Key (still works for API-only access)
     ADMIN_KEY: str = os.environ.get("ADMIN_KEY", "")
+
+    # Admin emails — comma-separated list of user emails with admin access.
+    # These users see the admin panel when logged into the portal.
+    # Example: "admin@swiftgate.dev,you@example.com"
+    ADMIN_EMAILS: str = os.environ.get("ADMIN_EMAILS", "")
 
     # JWT secret for user auth (tokens for the user portal)
     JWT_SECRET: str = os.environ.get("JWT_SECRET", "swiftgate-dev-secret-change-in-production")
@@ -86,6 +91,11 @@ class Settings:
     @property
     def is_postgres(self) -> bool:
         return "postgresql" in self.DATABASE_URL
+
+    @property
+    def admin_emails(self) -> set[str]:
+        """Return ADMIN_EMAILS as a lowercase set."""
+        return {e.strip().lower() for e in self.ADMIN_EMAILS.split(",") if e.strip()}
 
 
 settings = Settings()

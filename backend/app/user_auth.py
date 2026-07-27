@@ -24,9 +24,11 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def create_access_token(user_id: int, email: str) -> str:
+    is_admin = email.lower() in settings.admin_emails
     payload: dict[str, Any] = {
         "sub": str(user_id),
         "email": email,
+        "is_admin": is_admin,
         "exp": datetime.now(timezone.utc) + timedelta(hours=settings.JWT_EXPIRY_HOURS),
         "iat": datetime.now(timezone.utc),
     }

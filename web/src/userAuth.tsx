@@ -5,6 +5,7 @@ interface PortalUser {
   email: string;
   name: string | null;
   credits_usd?: number;
+  is_admin?: boolean;
 }
 
 interface UserAuthContextType {
