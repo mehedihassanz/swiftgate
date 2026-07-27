@@ -10,7 +10,6 @@ import AgentsPage from "./pages/AgentsPage";
 import CachePage from "./pages/CachePage";
 import QualityPage from "./pages/QualityPage";
 import PortalAuthPage from "./pages/PortalAuthPage";
-import PortalDashboardPage from "./pages/PortalDashboardPage";
 import SettingsPage from "./pages/SettingsPage";
 import ModelsBrowsePage from "./pages/ModelsBrowsePage";
 import ActivityPage from "./pages/ActivityPage";
@@ -22,7 +21,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function PortalLayout() {
+function AppLayout() {
   const { isAuthenticated } = useUserAuth();
   if (!isAuthenticated) return <Navigate to="/portal/login" replace />;
 
@@ -31,7 +30,7 @@ function PortalLayout() {
       <Sidebar />
       <main className="flex-1 overflow-auto p-6">
         <Routes>
-          {/* User pages */}
+          {/* All user pages */}
           <Route path="/" element={<DashboardPage />} />
           <Route path="/activity" element={<ActivityPage />} />
           <Route path="/models" element={<ModelsBrowsePage />} />
@@ -59,13 +58,15 @@ export default function App() {
     <UserAuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Auth pages (no sidebar) */}
-          <Route path="/portal" element={<PortalDashboardPage />} />
+          {/* Auth pages (no sidebar — just login/signup) */}
           <Route path="/portal/login" element={<PortalAuthPage mode="login" />} />
           <Route path="/portal/signup" element={<PortalAuthPage mode="signup" />} />
 
-          {/* Sidebar layout (all authenticated pages) */}
-          <Route path="/*" element={<PortalLayout />} />
+          {/* Legacy /portal redirect → sidebar dashboard */}
+          <Route path="/portal" element={<Navigate to="/" replace />} />
+
+          {/* Everything else = sidebar layout */}
+          <Route path="/*" element={<AppLayout />} />
         </Routes>
       </BrowserRouter>
     </UserAuthProvider>
