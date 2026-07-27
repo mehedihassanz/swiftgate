@@ -1,8 +1,8 @@
 import { Zap, Calculator, GitCompare, BarChart3, TrendingDown, Shield, Check, Code2, ArrowRight, DollarSign } from "lucide-react";
 
 // Links to the web service (different Railway service)
-const PORTAL_URL = "https://web-production-8fa1c.up.railway.app/portal/signup";
-const DASHBOARD_URL = "https://web-production-8fa1c.up.railway.app/login";
+const PORTAL_URL = "https://swiftgate.ai/portal/signup";
+const DASHBOARD_URL = "https://swiftgate.ai/login";
 
 export default function App() {
   return (

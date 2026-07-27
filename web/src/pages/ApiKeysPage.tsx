@@ -199,7 +199,7 @@ export default function ApiKeysPage() {
         <p className="font-semibold">How to use your API key:</p>
         <p className="mt-1">Pass it as a Bearer token in the Authorization header:</p>
         <pre className="mt-1 rounded bg-white p-2 font-mono text-xs">
-{`curl https://api.swiftgate.dev/v1/chat/completions \\
+{`curl https://api.swiftgate.ai/v1/chat/completions \\
   -H "Authorization: Bearer sg-..." \\
   -H "Content-Type: application/json" \\
   -d '{"model":"gpt-4o","messages":[{"role":"user","content":"Hello"}]}'`}

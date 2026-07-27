@@ -10,7 +10,7 @@ import httpx
 from ._exceptions import APIConnectionError, _make_status_error
 from ._types import Message
 
-DEFAULT_BASE_URL = "https://backend-production-41a7.up.railway.app"
+DEFAULT_BASE_URL = "https://api.swiftgate.ai"
 DEFAULT_TIMEOUT = 120.0
 
 

@@ -286,3 +286,37 @@ async def my_recent_usage(
             for r in records
         ],
     }
+
+
+@user_router.get("/usage/daily")
+async def my_daily_usage(
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    days: int = 30,
+):
+    """Daily cost breakdown for charts (user-scoped)."""
+    from datetime import datetime, timedelta, timezone
+
+    since = datetime.now(timezone.utc) - timedelta(days=min(days, 365))
+
+    result = await db.execute(
+        select(UsageRecord)
+        .join(ApiKey, UsageRecord.api_key_id == ApiKey.id)
+        .where(
+            ApiKey.user_id == user.id,
+            UsageRecord.created_at >= since,
+        )
+        .order_by(UsageRecord.created_at)
+    )
+    records = result.scalars().all()
+
+    daily: dict[str, dict] = {}
+    for r in records:
+        day = r.created_at.strftime("%Y-%m-%d") if r.created_at else "unknown"
+        if day not in daily:
+            daily[day] = {"date": day, "cost_cents": 0, "requests": 0, "tokens": 0}
+        daily[day]["cost_cents"] += r.total_cost_cents
+        daily[day]["requests"] += 1
+        daily[day]["tokens"] += r.prompt_tokens + r.completion_tokens
+
+    return {"daily": sorted(daily.values(), key=lambda x: x["date"])}

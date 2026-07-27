@@ -32,7 +32,7 @@ export class SwiftGateClient {
   private timeout: number;
 
   constructor(opts: SwiftGateClientOptions = {}) {
-    this.baseURL = (opts.baseURL || "https://backend-production-41a7.up.railway.app").replace(/\/$/, "");
+    this.baseURL = (opts.baseURL || "https://api.swiftgate.ai").replace(/\/$/, "");
     this.apiKey = opts.apiKey;
     this.timeout = opts.timeout || 120000;
   }
