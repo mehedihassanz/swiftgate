@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
 from app.config import settings
-from app.routers import admin, agents, analytics, apikeys, cache_pii, cost, gateway, quality, user_portal
+from app.routers import admin, agents, analytics, apikeys, billing, cache_pii, cost, gateway, quality, user_portal
 from app.services.pricing import seed_database
 
 @asynccontextmanager
@@ -118,8 +118,10 @@ app.include_router(apikeys.router)     # /v1/keys (create, list, revoke)
 app.include_router(agents.router)      # /v1/agents (budget orchestration)
 app.include_router(quality.router)     # /v1/quality, /v1/routing (quality-aware routing)
 app.include_router(cache_pii.router)   # /v1/cache, /v1/pii (semantic cache + PII redaction)
-app.include_router(user_portal.router) # /auth/register, /auth/login (user portal auth)
-app.include_router(user_portal.user_router) # /user/keys, /user/usage (user portal)
+app.include_router(user_portal.router)       # /auth/register, /auth/login (user portal auth)
+app.include_router(user_portal.user_router)  # /user/keys, /user/usage (user portal)
+app.include_router(billing.router)           # /user/billing/checkout (Stripe)
+app.include_router(billing.webhook_router)   # /billing/webhook (Stripe webhook)
 
 
 # ─── Root ──────────────────────────────────────────────────────────────

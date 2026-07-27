@@ -13,6 +13,7 @@ alembic>=1.13.0
 pyjwt>=2.8.0
 bcrypt>=4.0.0
 email-validator>=2.0.0
+stripe>=8.0.0
 # Optional: transformers for exact llama/qwen/mistral token counting.
 # NOT included by default — pulls in torch (~800MB). Install separately if needed:
 #   pip install transformers>=4.40.0

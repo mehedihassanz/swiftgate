@@ -26,6 +26,8 @@ services:
       - ADMIN_EMAILS=${ADMIN_EMAILS:-}
       - JWT_SECRET=${JWT_SECRET:-swiftgate-dev-secret-change-in-production}
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
       # Set these to enable the gateway proxy
       # - OPENAI_API_KEY=sk-...
       # - ANTHROPIC_API_KEY=sk-ant-...

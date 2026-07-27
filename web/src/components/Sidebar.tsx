@@ -1,6 +1,6 @@
 import {
   Zap, Gauge, Key, Activity, Cpu, Settings, Bot,
-  Calculator, GitCompare, Database, Trophy, LogOut, ChevronRight,
+  Calculator, GitCompare, Database, Trophy, LogOut,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useUserAuth } from "../userAuth";
@@ -98,7 +98,9 @@ export default function Sidebar() {
         <NavLink to="/settings" className="block rounded-lg bg-ink-50 px-3 py-2.5 hover:bg-ink-100">
           <div className="flex items-center justify-between">
             <span className="text-xs text-ink-500">Credits</span>
-            <ChevronRight className="h-3 w-3 text-ink-400" />
+            <span className="rounded bg-brand-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+              +
+            </span>
           </div>
           <div className="mt-0.5 text-lg font-bold text-ink-900">
             ${((user?.credits_usd ?? 0)).toFixed(2)}
