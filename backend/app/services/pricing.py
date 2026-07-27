@@ -152,6 +152,27 @@ PROVIDERS = [
         "api_key_env": "BYTEDANCE_API_KEY",
         "priority": 25,
     },
+    {
+        "name": "openrouter",
+        "display_name": "OpenRouter",
+        "base_url": "https://openrouter.ai/api/v1",
+        "api_key_env": "OPENROUTER_API_KEY",
+        "priority": 30,
+    },
+    {
+        "name": "hyperbolic",
+        "display_name": "Hyperbolic",
+        "base_url": "https://api.hyperbolic.xyz/v1",
+        "api_key_env": "HYPERBOLIC_API_KEY",
+        "priority": 25,
+    },
+    {
+        "name": "lepton",
+        "display_name": "Lepton AI",
+        "base_url": "https://api.lepton.ai/v1",
+        "api_key_env": "LEPTON_API_KEY",
+        "priority": 25,
+    },
 ]
 
 
@@ -604,6 +625,92 @@ MODELS = [
         "supports_tools": True, "supports_vision": True, "supports_json": True,
         "quality_score": 7.8, "speed_score": 90, "category": "cheap",
     },
+    # ── OpenRouter exclusives (multi-model aggregator) ──────────────────
+    {
+        "model_id": "openrouter/auto",
+        "display_name": "OpenRouter Auto (Cheapest)",
+        "provider": "openrouter",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.000001",       # ~$1/1M avg (varies by routed model)
+        "completion_price": "0.000002",    # ~$2/1M avg
+        "cached_price": None,
+        "context_window": 128000, "max_output": 4096,
+        "supports_tools": False, "supports_vision": False, "supports_json": True,
+        "quality_score": 7.5, "speed_score": 80, "category": "balanced",
+    },
+    {
+        "model_id": "qwen/qwen-2.5-72b-instruct",
+        "display_name": "Qwen 2.5 72B Instruct",
+        "provider": "openrouter",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.00000023",     # $0.23/1M
+        "completion_price": "0.00000042",  # $0.42/1M
+        "cached_price": None,
+        "context_window": 131072, "max_output": 8192,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 8.2, "speed_score": 75, "category": "balanced",
+    },
+    {
+        "model_id": "meta-llama/llama-3.3-70b-instruct",
+        "display_name": "Llama 3.3 70B (OpenRouter)",
+        "provider": "openrouter",
+        "tokenizer": "llama",
+        "prompt_price": "0.00000023",     # $0.23/1M
+        "completion_price": "0.0000004",   # $0.40/1M
+        "cached_price": None,
+        "context_window": 131072, "max_output": 4096,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 8.0, "speed_score": 85, "category": "balanced",
+    },
+    {
+        "model_id": "mistralai/mistral-large-2411",
+        "display_name": "Mistral Large 2411",
+        "provider": "openrouter",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.000002",       # $2/1M
+        "completion_price": "0.000006",    # $6/1M
+        "cached_price": None,
+        "context_window": 128000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 8.3, "speed_score": 70, "category": "frontier",
+    },
+    {
+        "model_id": "google/gemini-flash-1.5",
+        "display_name": "Gemini Flash 1.5 (OpenRouter)",
+        "provider": "openrouter",
+        "tokenizer": "tiktoken",
+        "prompt_price": "0.000000075",   # $0.075/1M
+        "completion_price": "0.0000003",   # $0.30/1M
+        "cached_price": None,
+        "context_window": 1000000, "max_output": 8192,
+        "supports_tools": True, "supports_vision": True, "supports_json": True,
+        "quality_score": 8.0, "speed_score": 95, "category": "cheap",
+    },
+    {
+        "model_id": "nvidia/llama-3.1-nemotron-70b-instruct",
+        "display_name": "Nemotron 70B (NVIDIA)",
+        "provider": "openrouter",
+        "tokenizer": "llama",
+        "prompt_price": "0.00000012",    # $0.12/1M
+        "completion_price": "0.0000003",   # $0.30/1M
+        "cached_price": None,
+        "context_window": 131072, "max_output": 4096,
+        "supports_tools": True, "supports_vision": False, "supports_json": True,
+        "quality_score": 8.1, "speed_score": 88, "category": "balanced",
+    },
+    # ── Hyperbolic (open-source GPU hosting) ─────────────────────────────
+    {
+        "model_id": "meta-llama/Meta-Llama-3.1-405B-Instruct",
+        "display_name": "Llama 3.1 405B (Hyperbolic)",
+        "provider": "hyperbolic",
+        "tokenizer": "llama",
+        "prompt_price": "0.000001",      # $1/1M
+        "completion_price": "0.000003",    # $3/1M
+        "cached_price": None,
+        "context_window": 131072, "max_output": 4096,
+        "supports_tools": False, "supports_vision": False, "supports_json": True,
+        "quality_score": 8.5, "speed_score": 60, "category": "frontier",
+    },
 ]
 
 
@@ -739,6 +846,14 @@ QUALITY_SEEDS = [
     ("deepseek-v4-flash", "code", 7.9, "seed_expert"),
     ("grok-4-fast", "chat", 8.0, "seed_expert"),
     ("command-r", "chat", 7.8, "seed_expert"),
+    # OpenRouter models
+    ("openrouter/auto", "chat", 7.5, "seed_expert"),
+    ("qwen/qwen-2.5-72b-instruct", "code", 8.2, "seed_expert"),
+    ("meta-llama/llama-3.3-70b-instruct", "chat", 8.0, "seed_expert"),
+    ("mistralai/mistral-large-2411", "reasoning", 8.3, "seed_expert"),
+    ("google/gemini-flash-1.5", "chat", 8.0, "seed_expert"),
+    ("nvidia/llama-3.1-nemotron-70b-instruct", "chat", 8.1, "seed_expert"),
+    ("meta-llama/Meta-Llama-3.1-405B-Instruct", "reasoning", 8.5, "seed_expert"),
 ]
 
 

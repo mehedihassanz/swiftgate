@@ -71,6 +71,9 @@ class Settings:
     MISTRAL_API_KEY: str = os.environ.get("MISTRAL_API_KEY", "")
     DEEPSEEK_API_KEY: str = os.environ.get("DEEPSEEK_API_KEY", "")
 
+    # OpenRouter (multi-model aggregator — access 300+ models via one API)
+    OPENROUTER_API_KEY: str = os.environ.get("OPENROUTER_API_KEY", "")
+
     # Gateway margin (our markup on tokens — e.g. 0.01 = 1%)
     TOKEN_MARGIN: float = float(os.environ.get("TOKEN_MARGIN", "0.01"))
 

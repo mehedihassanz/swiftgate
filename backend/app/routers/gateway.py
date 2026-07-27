@@ -145,6 +145,10 @@ def _build_upstream_request(
             "Authorization": f"Bearer {_get_api_key_for_provider(provider)}",
             "content-type": "application/json",
         }
+        # OpenRouter-specific headers for analytics and routing
+        if provider.name == "openrouter":
+            headers["HTTP-Referer"] = "https://swiftgate.ai"
+            headers["X-Title"] = "SwiftGate Gateway"
         body = dict(request_body)
         # Replace model_id with the provider's native ID if different
         body["model"] = model.model_id
