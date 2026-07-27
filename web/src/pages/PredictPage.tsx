@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calculator, Loader2, TrendingDown, CheckCircle, AlertCircle } from "lucide-react";
 import { authFetch } from "../auth";
 
@@ -53,12 +53,12 @@ export default function PredictPage() {
   const [error, setError] = useState("");
 
   // Load models on mount
-  useState(() => {
+  useEffect(() => {
     authFetch("/v1/models")
       .then((r) => r.json())
       .then((d) => setModels(d.models || []))
       .catch(() => {});
-  });
+  }, []);
 
   const predict = async () => {
     setLoading(true);

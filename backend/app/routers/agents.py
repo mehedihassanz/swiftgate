@@ -59,7 +59,7 @@ class AgentEventCreate(BaseModel):
 # ─── Endpoints ─────────────────────────────────────────────────────────
 
 @router.post("", status_code=201)
-async def create_agent(body: AgentCreate, db: AsyncSession = Depends(get_db)):
+async def create_agent(body: AgentCreate, db: AsyncSession = Depends(get_db), _admin: bool = Depends(require_admin)):
     """Register a new agent for budget tracking."""
     existing = await db.execute(select(Agent).where(Agent.agent_id == body.agent_id))
     if existing.scalar_one_or_none():
@@ -81,6 +81,7 @@ async def create_agent(body: AgentCreate, db: AsyncSession = Depends(get_db)):
 async def list_agents(
     status_filter: str | None = Query(None, alias="status"),
     db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(require_admin),
 ):
     """List all agents with spend summary."""
     stmt = select(Agent).order_by(desc(Agent.created_at))
@@ -96,7 +97,7 @@ async def list_agents(
 
 
 @router.get("/{agent_id}")
-async def get_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
+async def get_agent(agent_id: str, db: AsyncSession = Depends(get_db), _admin: bool = Depends(require_admin)):
     """Get agent details including recent usage."""
     result = await db.execute(select(Agent).where(Agent.agent_id == agent_id))
     agent = result.scalar_one_or_none()
@@ -211,6 +212,7 @@ async def get_agent_trace(
     limit: int = Query(50, ge=1, le=500),
     trace_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(require_admin),
 ):
     """Get the execution trace (event log) for an agent."""
     stmt = (
@@ -236,6 +238,7 @@ async def record_event(
     agent_id: str,
     body: AgentEventCreate,
     db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(require_admin),
 ):
     """Record an event in the agent's execution trace."""
     # Verify agent exists

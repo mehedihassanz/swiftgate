@@ -20,7 +20,7 @@ services:
     environment:
       - DATABASE_URL=sqlite+aiosqlite:///./data/swiftgate.db
       - REDIS_URL=redis://redis:6379/0
-      - ENV=production
+      - ENV=development
       - TOKEN_MARGIN=0.01
       - ADMIN_KEY=${ADMIN_KEY:-}
       - JWT_SECRET=${JWT_SECRET:-swiftgate-dev-secret-change-in-production}

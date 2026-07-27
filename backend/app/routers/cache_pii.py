@@ -47,7 +47,7 @@ class CacheInvalidateRequest(BaseModel):
 # ─── Cache Endpoints ───────────────────────────────────────────────────
 
 @router.get("/cache/stats")
-async def cache_stats(db: AsyncSession = Depends(get_db)):
+async def cache_stats(db: AsyncSession = Depends(get_db), _admin: bool = Depends(require_admin)):
     """Get cache statistics: hit rate, cost savings, entry counts."""
     return await get_cache_stats(db)
 

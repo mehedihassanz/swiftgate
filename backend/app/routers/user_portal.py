@@ -133,7 +133,7 @@ async def get_me(user: CurrentUser):
         "email": user.email,
         "name": user.name,
         "credits_cents": user.credits_cents,
-        "credits_usd": round(user.credits_cents / 100, 2),
+        "credits_usd": round(user.credits_cents / 10000, 2),
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
 
@@ -245,11 +245,11 @@ async def my_usage(user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db
     return {
         "total_requests": total_requests,
         "total_spend_cents": total_spend_cents,
-        "total_spend_usd": round(total_spend_cents / 100, 4),
+        "total_spend_usd": round(total_spend_cents / 10000, 4),
         "total_prompt_tokens": total_prompt,
         "total_completion_tokens": total_completion,
         "credits_remaining_cents": user.credits_cents,
-        "credits_remaining_usd": round(user.credits_cents / 100, 2),
+        "credits_remaining_usd": round(user.credits_cents / 10000, 2),
     }
 
 
@@ -278,7 +278,7 @@ async def my_recent_usage(
                 "prompt_tokens": r.prompt_tokens,
                 "completion_tokens": r.completion_tokens,
                 "cost_cents": r.total_cost_cents,
-                "cost_usd": round(r.total_cost_cents / 100, 6) if r.total_cost_cents else 0,
+                "cost_usd": round(r.total_cost_cents / 10000, 6) if r.total_cost_cents else 0,
                 "latency_ms": r.latency_ms,
                 "created_at": r.created_at.isoformat() if r.created_at else "",
             }

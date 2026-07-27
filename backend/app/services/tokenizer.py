@@ -72,22 +72,26 @@ def _get_tiktoken_encoder():
 
 @lru_cache(maxsize=1)
 def _get_anthropic_encoder():
-    """Get the Anthropic tokenizer."""
-    try:
-        import anthropic
-        # The anthropic SDK has a tokenizer
-        client = anthropic.Anthropic(api_key="dummy")  # doesn't need a real key for counting
-        return client
-    except ImportError:
-        logger.warning("anthropic SDK not installed, using tiktoken approximation")
-        return _get_tiktoken_encoder()
-    except Exception:
-        return _get_tiktoken_encoder()
+    """Get a tokenizer for Anthropic/Claude models.
+
+    The anthropic Python SDK (>=0.20) removed the client.count_tokens() method.
+    We approximate with tiktoken's cl100k encoding, which is close for cost
+    estimation purposes. For exact counts, users would need to call the
+    Anthropic Messages API with a dry-run.
+    """
+    # tiktoken approximation — Claude's tokenizer is similar enough for cost prediction
+    return _get_tiktoken_encoder()
 
 
 @lru_cache(maxsize=8)
 def _get_hf_tokenizer(model_family: str):
-    """Load a HuggingFace tokenizer for open-source models."""
+    """Load a HuggingFace tokenizer for open-source models.
+
+    NOTE: Requires 'transformers' (optional dependency). Without it, falls back
+    to char-based estimation. The transformers package pulls in torch (~800MB),
+    so it's NOT in the default requirements.txt — install separately if needed:
+        pip install transformers
+    """
     try:
         from transformers import AutoTokenizer
         # Map model family to HF repo
@@ -125,12 +129,9 @@ def get_token_count(messages: list[dict[str, Any]], model_id: str) -> int:
         encoder = _get_tiktoken_encoder()
         raw_tokens = len(encoder.encode(text))
     elif tokenizer_type == "anthropic":
-        client = _get_anthropic_encoder()
-        try:
-            raw_tokens = client.count_tokens(text)
-        except Exception:
-            encoder = _get_tiktoken_encoder()
-            raw_tokens = len(encoder.encode(text))
+        # Anthropic SDK removed count_tokens(); use tiktoken approximation
+        encoder = _get_tiktoken_encoder()
+        raw_tokens = len(encoder.encode(text))
     elif tokenizer_type in ("llama", "qwen", "mistral"):
         tokenizer = _get_hf_tokenizer(tokenizer_type)
         raw_tokens = len(tokenizer.encode(text))

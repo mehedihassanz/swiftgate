@@ -230,7 +230,7 @@ export default function PortalDashboardPage() {
                       )}
                     </div>
                     <div className="mt-0.5 text-xs text-ink-400">
-                      {(k.total_spend_cents / 100).toFixed(4)} USD · {k.total_requests} requests
+                      ${(k.total_spend_cents / 10000).toFixed(4)} USD · {k.total_requests} requests
                     </div>
                   </div>
                   <button

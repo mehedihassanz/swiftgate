@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Databases (never ship dev/test DBs)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+data/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Docker
+Dockerfile
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

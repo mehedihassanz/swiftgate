@@ -8,7 +8,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend source + migration config
 COPY . .
-COPY alembic.ini ./alembic.ini
 
 # Create data dir for SQLite (fallback when Postgres not configured)
 RUN mkdir -p /app/data

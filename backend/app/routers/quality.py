@@ -23,6 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.auth import require_admin
 from app.models import QualityScore, RoutingRule
 from app.services.quality_router import (
     get_quality_index,
@@ -183,7 +184,7 @@ class RoutingRuleUpdate(BaseModel):
 # ─── Routing Rules Endpoints ───────────────────────────────────────────
 
 @router.get("/routing/rules")
-async def list_routing_rules(db: AsyncSession = Depends(get_db)):
+async def list_routing_rules(db: AsyncSession = Depends(get_db), _admin: bool = Depends(require_admin)):
     """List all routing rules, ordered by priority."""
     result = await db.execute(
         select(RoutingRule).order_by(RoutingRule.priority, RoutingRule.created_at.desc())
@@ -210,7 +211,7 @@ async def list_routing_rules(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/routing/rules", status_code=201)
-async def create_routing_rule(body: RoutingRuleCreate, db: AsyncSession = Depends(get_db)):
+async def create_routing_rule(body: RoutingRuleCreate, db: AsyncSession = Depends(get_db), _admin: bool = Depends(require_admin)):
     """Create a routing rule."""
     rule = RoutingRule(**body.model_dump())
     db.add(rule)
@@ -220,7 +221,7 @@ async def create_routing_rule(body: RoutingRuleCreate, db: AsyncSession = Depend
 
 
 @router.put("/routing/rules/{rule_id}")
-async def update_routing_rule(rule_id: int, body: RoutingRuleUpdate, db: AsyncSession = Depends(get_db)):
+async def update_routing_rule(rule_id: int, body: RoutingRuleUpdate, db: AsyncSession = Depends(get_db), _admin: bool = Depends(require_admin)):
     """Update a routing rule."""
     rule = await db.get(RoutingRule, rule_id)
     if not rule:
@@ -234,7 +235,7 @@ async def update_routing_rule(rule_id: int, body: RoutingRuleUpdate, db: AsyncSe
 
 
 @router.delete("/routing/rules/{rule_id}")
-async def delete_routing_rule(rule_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_routing_rule(rule_id: int, db: AsyncSession = Depends(get_db), _admin: bool = Depends(require_admin)):
     """Delete a routing rule."""
     rule = await db.get(RoutingRule, rule_id)
     if not rule:

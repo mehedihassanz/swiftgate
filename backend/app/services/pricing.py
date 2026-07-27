@@ -305,7 +305,7 @@ MODELS = [
     {
         "model_id": "glm-5-2",
         "display_name": "GLM-5.2 (Zhipu)",
-        "provider": "together",
+        "provider": "zhipu",
         "tokenizer": "qwen",
         "prompt_price": "0.0000014",      # $1.40/1M
         "completion_price": "0.0000044",   # $4.40/1M

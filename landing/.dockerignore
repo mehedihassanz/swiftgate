@@ -1,0 +1,18 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Docker
+Dockerfile
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Misc
+.env*
+!.env.example
+.DS_Store

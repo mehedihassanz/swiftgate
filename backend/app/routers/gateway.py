@@ -77,7 +77,9 @@ async def _authenticate(
     raw_key = authorization[7:]
     key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
 
-    result = await db.execute(select(ApiKey).where(ApiKey.key_hash == key_hash))
+    result = await db.execute(
+        select(ApiKey).options(selectinload(ApiKey.user)).where(ApiKey.key_hash == key_hash)
+    )
     api_key = result.scalar_one_or_none()
 
     if api_key and not api_key.is_active:
@@ -299,11 +301,7 @@ async def _record_usage(
 
         # Deduct credits from the user's balance
         if api_key.user_id:
-            from app.models import User as UserModel
-            user_result = await db.execute(
-                select(UserModel).where(UserModel.id == api_key.user_id)
-            )
-            user_obj = user_result.scalar_one_or_none()
+            user_obj = api_key.user  # already loaded via selectinload
             if user_obj:
                 user_obj.credits_cents = max(0, user_obj.credits_cents - total_cost)
 
@@ -396,7 +394,8 @@ def _check_budget(api_key: ApiKey | None, predicted_cost_cents: int) -> None:
     if not api_key or not api_key.is_active:
         return
 
-    # Check user credits (if linked to a user)
+    # All cost fields in the system use microcents (1/10000 USD) — the budget and
+    # credit fields are no different.  This keeps comparisons 1:1.
     if api_key.user and api_key.user.credits_cents <= 0:
         raise HTTPException(
             402,
@@ -405,7 +404,7 @@ def _check_budget(api_key: ApiKey | None, predicted_cost_cents: int) -> None:
     if api_key.user and api_key.user.credits_cents < predicted_cost_cents:
         raise HTTPException(
             402,
-            f"Insufficient credits. Remaining: ${api_key.user.credits_cents / 100:.4f}, "
+            f"Insufficient credits. Remaining: ${api_key.user.credits_cents / 10000:.4f}, "
             f"Predicted cost: ${predicted_cost_cents / 10000:.4f}. "
             f"Please add credits to your account."
         )
