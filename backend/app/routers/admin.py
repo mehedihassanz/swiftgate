@@ -120,6 +120,16 @@ async def create_provider(
     _admin: bool = Depends(require_admin),
 ):
     """Add a new provider."""
+    # SSRF protection: validate the base_url
+    from urllib.parse import urlparse
+    parsed = urlparse(body.base_url)
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(400, f"Invalid URL scheme: {parsed.scheme}. Only http/https allowed.")
+    hostname = parsed.hostname or ""
+    if hostname in ("localhost", "0.0.0.0", "::1", "127.0.0.1") or hostname.startswith("10.") \
+       or hostname.startswith("172.16.") or hostname.startswith("192.168.") or hostname.startswith("169.254."):
+        raise HTTPException(400, f"Internal/private hostnames are not allowed for provider base_url.")
+
     existing = await db.execute(select(Provider).where(Provider.name == body.name))
     if existing.scalar_one_or_none():
         raise HTTPException(409, f"Provider '{body.name}' already exists")

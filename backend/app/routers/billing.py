@@ -209,14 +209,13 @@ async def stripe_webhook(
     payload = await request.body()
     webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 
+    if not webhook_secret:
+        raise HTTPException(503, "Stripe webhook secret not configured. Refusing to process unverified webhooks.")
+
     try:
-        if webhook_secret and stripe_signature:
-            event = stripe.Webhook.construct_event(
-                payload, stripe_signature, webhook_secret
-            )
-        else:
-            import json
-            event = json.loads(payload)
+        event = stripe.Webhook.construct_event(
+            payload, stripe_signature, webhook_secret
+        )
     except ValueError:
         raise HTTPException(400, "Invalid payload")
     except stripe.error.SignatureVerificationError:

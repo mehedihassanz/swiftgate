@@ -398,6 +398,11 @@ def _check_budget(api_key: ApiKey | None, predicted_cost_cents: int) -> None:
     if not api_key or not api_key.is_active:
         return
 
+    # Note: For full race-condition protection, the caller should re-check
+    # with SELECT FOR UPDATE inside the same transaction as the usage record.
+    # This pre-flight check uses the in-memory value as a fast rejection path.
+    # The authoritative check happens in _record_usage which increments atomically.
+
     # All cost fields in the system use microcents (1/10000 USD) — the budget and
     # credit fields are no different.  This keeps comparisons 1:1.
     if api_key.user and api_key.user.credits_cents <= 0:
@@ -838,7 +843,7 @@ async def _handle_streaming(
 
         except Exception as e:
             logger.error(f"Streaming error from {provider.name}: {e}")
-            yield f'data: {{"error": "{str(e)}"}}\n\n'
+            yield f'data: {{"error": "Streaming interrupted. Please retry."}}\n\n'
 
         finally:
             # Record usage with a fresh session (request session may be closed)

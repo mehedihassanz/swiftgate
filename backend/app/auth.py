@@ -34,8 +34,10 @@ def require_admin(
     3. Falls back to dev mode if neither ADMIN_KEY nor ADMIN_EMAILS configured
     """
     # ── 1. Legacy X-Admin-Key ──
-    if ADMIN_KEY and x_admin_key and x_admin_key == ADMIN_KEY:
-        return x_admin_key
+    if ADMIN_KEY and x_admin_key:
+        import hmac
+        if hmac.compare_digest(x_admin_key, ADMIN_KEY):
+            return x_admin_key
 
     # ── 2. JWT Bearer token with is_admin claim ──
     auth_header = request.headers.get("Authorization", "")

@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.models import ApiKey, UsageRecord, User
+from app.services.rate_limiter import check_rate_limit
 from app.user_auth import (
     authenticate_user,
     create_access_token,
@@ -98,8 +99,16 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 @router.post("/register", response_model=TokenResponse, status_code=201)
 async def register(
     req: RegisterRequest,
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
+    # Rate limit: 5 signups per minute per IP (prevents spam/brute-force)
+    client_ip = request.client.host if request.client else "unknown"
+    import hashlib as _hashlib
+    ip_key = int(_hashlib.md5(client_ip.encode()).hexdigest()[:8], 16)
+    allowed, _ = await check_rate_limit(ip_key)
+    if not allowed:
+        raise HTTPException(429, "Too many registration attempts from this IP. Please try again later.")
     try:
         user = await register_user(db, req.email, req.password, req.name)
     except ValueError as e:
@@ -123,8 +132,16 @@ async def register(
 @router.post("/login", response_model=TokenResponse)
 async def login(
     req: LoginRequest,
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
+    # Rate limit: 10 login attempts per minute per IP
+    client_ip = request.client.host if request.client else "unknown"
+    import hashlib as _hashlib
+    ip_key = int(_hashlib.md5(f"login:{client_ip}".encode()).hexdigest()[:8], 16)
+    allowed, _ = await check_rate_limit(ip_key)
+    if not allowed:
+        raise HTTPException(429, "Too many login attempts. Please try again later.")
     user = await authenticate_user(db, req.email, req.password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")

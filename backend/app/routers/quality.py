@@ -17,14 +17,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.auth import require_admin
-from app.models import QualityScore, RoutingRule
+from app.models import ApiKey, QualityScore, RoutingRule
 from app.services.quality_router import (
     get_quality_index,
     record_quality_signal,
@@ -55,12 +55,33 @@ class QualityRouteRequest(BaseModel):
 # ─── Quality Endpoints ─────────────────────────────────────────────────
 
 @router.post("/quality/feedback")
-async def submit_feedback(body: FeedbackRequest, db: AsyncSession = Depends(get_db)):
+async def submit_feedback(
+    body: FeedbackRequest,
+    db: AsyncSession = Depends(get_db),
+    authorization: str | None = Header(None),
+):
     """Submit explicit quality feedback for a model output.
 
     Accepts ratings 1-10. Converts to a QualityScore record that feeds
     the quality-aware routing engine.
+
+    Requires authentication — prevents quality score poisoning.
     """
+    import hashlib
+    from app.config import settings
+
+    # Require authentication (API key or dev mode)
+    allow_anon = settings.ENV in ("development", "testing")
+    if not allow_anon:
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(401, "Authentication required to submit feedback")
+        # Verify the API key exists
+        raw_key = authorization[7:]
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        result = await db.execute(select(ApiKey).where(ApiKey.key_hash == key_hash))
+        api_key = result.scalar_one_or_none()
+        if not api_key or not api_key.is_active:
+            raise HTTPException(401, "Invalid or revoked API key")
     qs = await record_quality_signal(
         db=db,
         model_id=body.model_id,

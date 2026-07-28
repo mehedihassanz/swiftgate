@@ -101,7 +101,7 @@ def _get_hf_tokenizer(model_family: str):
             "mistral": "mistralai/Mistral-7B-v0.3",
         }
         repo = hf_repos.get(model_family, "meta-llama/Meta-Llama-3-8B")
-        return AutoTokenizer.from_pretrained(repo, trust_remote_code=True)
+        return AutoTokenizer.from_pretrained(repo, trust_remote_code=False)
     except ImportError:
         logger.warning(f"transformers not installed, using char fallback for {model_family}")
         return CharTokenizer()
